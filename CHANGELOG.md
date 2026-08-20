@@ -85,6 +85,31 @@ All notable changes to this project are documented in this file.
   urgent (<60s, TRD §3.1) notification only fires on verify, matching
   Flow 5.4 step 5 — same notifications-app stub gap already flagged in
   `appointments`/`opd`.
+- `pharmacy` app (Milestone 5): `Drug`, `Prescription`, `PrescriptionItem`,
+  `StockBatch`, `DispenseRecord` (Data Dictionary §7; Solution Spec Flow
+  5.6). `Drug` is deliberately not facility-scoped or audited — the Data
+  Dictionary defines no `facility_id` for it (unlike every other model in
+  this app) and `AuditLogEntry.facility` is a required FK, so it's shared
+  reference-catalog data, not a per-facility clinical/financial record;
+  `StockBatch` is where the real per-facility, audited inventory state
+  lives. `dispense_medication()` decrements stock inside a
+  `select_for_update()`-locked transaction (Flow 5.6 step 3 spells out
+  "transactionally" explicitly) and tracks partial dispensing against
+  `qty_prescribed` across multiple dispense events, flipping
+  `Prescription.status` to `partially_dispensed`/`dispensed` as a
+  consequence. `is_controlled` drugs require a separate elevated
+  permission (`pharmacy.dispense_record.create_controlled`) beyond the
+  base dispense permission, checked once the specific drug is known (BRD
+  §6.8: gates Pharmacy Technician access) — the one place in this
+  codebase where a single request's permission requirement depends on
+  data resolved mid-request, not just the action name. `allergy_check`
+  is a best-effort substring match against the patient's recorded
+  allergies (Flow 5.6 step 2), surfaced as a flag for the pharmacist —
+  explicitly not a real drug-interaction database, which is out of scope
+  for this phase; final clinical judgment stays with the pharmacist.
+  Flow 5.6 step 5's reorder-threshold stock-request event is not
+  implemented at all (not even a stub) — Inventory & Procurement isn't a
+  Phase 1 module per the Data Dictionary's own roadmap.
 
 ### Security
 - **Cross-facility IDOR in every child-resource FK field.** DRF's default
