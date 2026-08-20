@@ -53,6 +53,11 @@ export function ConsultationWorkspace() {
               Order labs
             </Link>
           )}
+          {hasPermission("pharmacy.prescription.create") && (
+            <Link to={`/pharmacy/new?consultation=${consultation.id}`} className="button-primary inline-link">
+              Prescribe
+            </Link>
+          )}
         </div>
       </div>
 

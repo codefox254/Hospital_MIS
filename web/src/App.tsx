@@ -12,6 +12,10 @@ import { CreateLabOrderPage } from "./pages/laboratory/CreateLabOrderPage";
 import { LabOrderDetailPage } from "./pages/laboratory/LabOrderDetailPage";
 import { LabOrdersListPage } from "./pages/laboratory/LabOrdersListPage";
 import { ConsultationWorkspace } from "./pages/opd/ConsultationWorkspace";
+import { CreatePrescriptionPage } from "./pages/pharmacy/CreatePrescriptionPage";
+import { PharmacyCatalogPage } from "./pages/pharmacy/PharmacyCatalogPage";
+import { PrescriptionDetailPage } from "./pages/pharmacy/PrescriptionDetailPage";
+import { PrescriptionsListPage } from "./pages/pharmacy/PrescriptionsListPage";
 import { StartVisitPage } from "./pages/opd/StartVisitPage";
 import { VisitsListPage } from "./pages/opd/VisitsListPage";
 import { PatientDetailPage } from "./pages/patients/PatientDetailPage";
@@ -122,6 +126,39 @@ export default function App() {
               element={
                 <RequirePermission code="laboratory.lab_order.view">
                   <LabOrderDetailPage />
+                </RequirePermission>
+              }
+            />
+
+            <Route
+              path="/pharmacy"
+              element={
+                <RequirePermission code="pharmacy.prescription.view">
+                  <PrescriptionsListPage />
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="/pharmacy/new"
+              element={
+                <RequirePermission code="pharmacy.prescription.create">
+                  <CreatePrescriptionPage />
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="/pharmacy/catalog"
+              element={
+                <RequirePermission code="pharmacy.drug.view">
+                  <PharmacyCatalogPage />
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="/pharmacy/:id"
+              element={
+                <RequirePermission code="pharmacy.prescription.view">
+                  <PrescriptionDetailPage />
                 </RequirePermission>
               }
             />

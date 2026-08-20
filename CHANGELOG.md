@@ -108,10 +108,21 @@ All notable changes to this project are documented in this file.
   collected both samples, entered both results, watched the order's own
   status move pending → processing as a pure consequence of those
   actions (no status field the UI sets directly) — zero console errors.
-- Remaining for Milestone 7: Pharmacy and Billing module screens (same
-  vertical-slice pattern), and the shared design-system extraction the
-  TRD calls for once enough screens exist to know what's actually
-  shared.
+- Pharmacy module: a drugs-and-stock catalog screen (add drugs, add
+  stock batches), prescriptions list, a "Prescribe" flow reachable from
+  the OPD consultation workspace (presets the current consultation, same
+  pattern as "Order labs"), and a prescription detail page driving
+  dispensing per item — allergy conflicts surfaced inline before
+  dispensing (not a blocking modal; the pharmacist sees it and makes the
+  call, matching the backend's "flag, never a hard block" design), and
+  controlled drugs requiring the elevated permission before the dispense
+  form even renders. Verified end-to-end live: added a real drug and
+  stock batch, prescribed it against a real consultation, dispensed it,
+  watched stock decrement for real (200 → 185) and the prescription
+  status flip to `dispensed` — zero console errors.
+- Remaining for Milestone 7: Billing module screens, and the shared
+  design-system extraction the TRD calls for once enough screens exist
+  to know what's actually shared.
 
 ### Added
 - Repository scaffolding: monorepo layout, `.gitignore`, root `README.md`,
