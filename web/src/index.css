@@ -531,3 +531,92 @@ button {
   border-color: var(--accent);
   color: white;
 }
+
+/* --- OPD consultation workspace --- */
+.consultation-workspace {
+  max-width: 780px;
+}
+
+.consult-section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.consult-section h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.consult-section label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0.3rem;
+}
+
+.consult-section textarea {
+  width: 100%;
+  min-height: 70px;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.consult-section textarea:disabled {
+  background: #f5f6f8;
+  color: var(--text-muted);
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.vitals-row {
+  display: flex;
+  gap: 1.25rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.vitals-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.vitals-form input,
+.vitals-form select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  width: 140px;
+}
+
+.vitals-form button {
+  border: none;
+  background: var(--accent);
+  color: white;
+  border-radius: 6px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.diagnosis-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}

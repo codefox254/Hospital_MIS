@@ -81,10 +81,28 @@ All notable changes to this project are documented in this file.
     stylesheet) — every slot rendered as if selected. Scoped under
     `.slot-grid` to fix; also caught only by looking at the actual
     screenshot, not by the absence of a build/lint error.
-- Remaining for Milestone 7: OPD, Laboratory, Pharmacy, and Billing
-  module screens (same vertical-slice pattern), and the shared
-  design-system extraction the TRD calls for once enough screens exist
-  to know what's actually shared.
+- OPD module: visit list, a walk-in "start visit" flow, and the
+  consultation workspace — vitals entry, the draft clinical note
+  (autosaves on blur per field), diagnosis, "Complete consultation"
+  (locks it), and an addenda section that only appears once locked.
+  Solution Spec §7.2.3 describes a fuller split-panel workspace
+  (Investigations/Prescription/Procedures/Documents as separate
+  sections); this builds the clinically load-bearing subset as one
+  scrolling workspace instead — Investigations and Prescription aren't
+  duplicated here since Laboratory and Pharmacy already have their own
+  modules for that. Starting a visit from a specific checked-in
+  appointment (the backend supports `appointment` as an optional field,
+  verified in the live UAT walkthrough) isn't wired into this UI yet —
+  only the walk-in-style patient/doctor/department form is; there's no
+  queue-side "start visit for this patient" action to drive it from.
+  Verified end-to-end live: started a visit, recorded vitals, wrote and
+  saved a full clinical note, added a diagnosis, locked the
+  consultation, confirmed the locked fields render disabled, and added
+  a real addendum afterward — zero console errors throughout.
+- Remaining for Milestone 7: Laboratory, Pharmacy, and Billing module
+  screens (same vertical-slice pattern), and the shared design-system
+  extraction the TRD calls for once enough screens exist to know what's
+  actually shared.
 
 ### Added
 - Repository scaffolding: monorepo layout, `.gitignore`, root `README.md`,

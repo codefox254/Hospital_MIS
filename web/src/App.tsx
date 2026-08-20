@@ -8,6 +8,9 @@ import { AppointmentsListPage } from "./pages/appointments/AppointmentsListPage"
 import { BookAppointmentPage } from "./pages/appointments/BookAppointmentPage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
+import { ConsultationWorkspace } from "./pages/opd/ConsultationWorkspace";
+import { StartVisitPage } from "./pages/opd/StartVisitPage";
+import { VisitsListPage } from "./pages/opd/VisitsListPage";
 import { PatientDetailPage } from "./pages/patients/PatientDetailPage";
 import { PatientsListPage } from "./pages/patients/PatientsListPage";
 import { RegisterPatientPage } from "./pages/patients/RegisterPatientPage";
@@ -66,6 +69,31 @@ export default function App() {
               element={
                 <RequirePermission code="appointments.appointment.create">
                   <BookAppointmentPage />
+                </RequirePermission>
+              }
+            />
+
+            <Route
+              path="/opd"
+              element={
+                <RequirePermission code="opd.visit.view">
+                  <VisitsListPage />
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="/opd/new"
+              element={
+                <RequirePermission code="opd.visit.create">
+                  <StartVisitPage />
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="/opd/:id"
+              element={
+                <RequirePermission code="opd.visit.view">
+                  <ConsultationWorkspace />
                 </RequirePermission>
               }
             />
