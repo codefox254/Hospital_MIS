@@ -4,6 +4,57 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added (web console — Milestone 7, in progress)
+- `web/`: React 19 + TypeScript SPA scaffolded with Vite, per TRD §5.1's
+  stack — React Router (permission-gated route guards), TanStack Query
+  for server state, Zustand for client/auth state (persisted to
+  localStorage), React Hook Form + Zod for forms, axios with a JWT
+  refresh interceptor (single in-flight refresh, not one per failed
+  request).
+- Auth: login page wired to the real `/api/v1/auth/token/` endpoint
+  (MFA code field appears reactively if the server reports one's
+  needed), token refresh, sign-out. Route guards (`RequireAuth`,
+  `RequirePermission`) redirect rather than render-then-block, per TRD
+  §5.1 — but this is UX only; the server's `HasModulePermission` is the
+  only real enforcement, unchanged.
+- `GET /api/v1/auth/me/` (backend addition, not in the original
+  endpoint list): the frontend needs its own effective permission set
+  to gate routes/nav before rendering, and the JWT carries no custom
+  claims to read it from. Exposes exactly what
+  `get_effective_permission_codes()` already computes server-side — the
+  same function `HasModulePermission` calls on every request — so
+  client-side gating and server-side enforcement read from one source
+  and can't drift apart.
+- App shell: sidebar navigation (only linking modules that actually
+  exist on the backend today — Patients, Appointments, OPD, Laboratory,
+  Pharmacy, Billing; the Solution Spec's fuller nav list includes
+  modules like Inpatients/Radiology/Insurance/Inventory/HR/Reports that
+  aren't built yet, and listing them would be dead links, not a
+  preview), filtered per the logged-in user's permissions.
+- Patients module (first full vertical slice, proving the pattern end
+  to end against the real backend): list with search, registration
+  form, detail view. Verified live against the running Docker stack via
+  a headless-browser walkthrough (screenshots captured) — zero browser
+  console errors, MRN generation, search, and detail navigation all
+  working through the real API, not mocked.
+- Found and fixed live: `CORS_ALLOWED_ORIGINS` (deliberately empty by
+  default — see `config/settings/base.py`'s "locked down" comment) had
+  no entry for the dev server's origin, so every request from the
+  browser failed the CORS preflight before ever reaching Django. Added
+  `http://localhost:5173` to `backend/.env` (gitignored, dev-only) and
+  documented it in `.env.example`.
+- Dashboard is deliberately minimal (name + facility only) rather than
+  the Solution Spec's KPI-card mockup (§7.2.1: Today's Patients, OPD
+  Visits, Bed Occupancy, Revenue Today, each with a trend delta) — no
+  backend aggregation/analytics endpoint exists to back those numbers,
+  and Inpatients/bed data isn't built at all. Fabricating the numbers
+  would be worse than an honest placeholder.
+- Remaining for Milestone 7: Appointments, OPD, Laboratory, Pharmacy,
+  and Billing module screens (same vertical-slice pattern as Patients),
+  the WebSocket-backed live queue panel (TRD §5.2), and the shared
+  design-system extraction the TRD calls for once enough screens exist
+  to know what's actually shared.
+
 ### Added
 - Repository scaffolding: monorepo layout, `.gitignore`, root `README.md`,
   in-repo Markdown copies of the Solution Spec, TRD, and Phase 1 Data
