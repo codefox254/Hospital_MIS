@@ -98,7 +98,45 @@ def dispense_medication(
         record.save(actor=actor, ip_address=ip_address)
 
     _refresh_prescription_status(prescription_item.prescription, actor=actor, ip_address=ip_address)
+    _bill_dispense_record(record, actor=actor, ip_address=ip_address)
     return record
+
+
+def _bill_dispense_record(record, *, actor=None, ip_address=None):
+    """
+    "Generates an InvoiceLineItem on creation" (Data Dictionary §7) — the
+    one Pharmacy->Billing hook this codebase actually wires end-to-end,
+    because StockBatch.unit_cost is real pricing data. OPD's consultation
+    fee and Laboratory's per-test pricing don't get the same treatment:
+    neither model defines a price field in the Data Dictionary, and
+    inventing one would mean charging a number the spec never specified,
+    not just deferring a mechanical wiring step.
+    """
+    if record.batch.unit_cost is None:
+        return
+
+    from apps.billing.services import add_line_item, get_or_create_open_invoice
+
+    prescription = record.prescription_item.prescription
+    visit = prescription.consultation.visit
+    invoice = get_or_create_open_invoice(
+        facility=visit.facility,
+        patient=prescription.patient,
+        visit=visit,
+        created_by=record.dispensed_by,
+        actor=actor,
+        ip_address=ip_address,
+    )
+    add_line_item(
+        invoice,
+        source_module="pharmacy",
+        source_reference_id=record.id,
+        description=f"{record.batch.drug} x{record.qty_dispensed}",
+        unit_price=record.batch.unit_cost,
+        quantity=record.qty_dispensed,
+        actor=actor,
+        ip_address=ip_address,
+    )
 
 
 def _refresh_prescription_status(prescription, *, actor=None, ip_address=None):

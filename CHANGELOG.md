@@ -110,6 +110,46 @@ All notable changes to this project are documented in this file.
   Flow 5.6 step 5's reorder-threshold stock-request event is not
   implemented at all (not even a stub) — Inventory & Procurement isn't a
   Phase 1 module per the Data Dictionary's own roadmap.
+- `billing` app (Milestone 6, Phase 1 complete): `Invoice`,
+  `InvoiceLineItem`, `Payment`, `MpesaTransaction`, `Refund` (Data
+  Dictionary §8; Solution Spec Flow 5.7). Invoice numbering
+  (`INV-{FACILITY}-{YEAR}-{SEQ}`) mirrors `patients.services`' MRN
+  pattern exactly — server-side generation, retry-on-collision against
+  the UNIQUE constraint. `get_or_create_open_invoice()` means every
+  service-generating action for the same visit lands on one invoice, not
+  a new one per line item. `InvoiceLineItem` has no create/update
+  endpoint at all — `add_line_item()` is the only way one gets created,
+  living up to the Data Dictionary's own framing that "this module never
+  accepts a hand-entered charge." M-Pesa is a stub (no Daraja
+  sandbox/production credentials available) but a real one:
+  `initiate_mpesa_stk_push()` creates genuine, queryable Payment/
+  MpesaTransaction rows a real integration would create too, and
+  `process_mpesa_callback()` is idempotent against a retried callback,
+  matching Flow 5.7 step 5's idempotency-key requirement, verified with a
+  test that deliberately retries a callback with different (wrong) data
+  and confirms it's a no-op. The callback endpoint itself is
+  unauthenticated (`AllowAny`) since it's called by Safaricom's
+  infrastructure, not a logged-in user — flagged in its own docstring
+  that a real deployment needs real webhook auth (IP allowlisting or a
+  shared secret) this stub doesn't have credentials to implement.
+  `approve_refund()` enforces BRD §6.9's separation of duties (the
+  cashier who took a payment can never approve its own refund) the same
+  shape as laboratory's entered-by/verified-by rule. Discounts above
+  `DISCOUNT_APPROVAL_THRESHOLD` require a second, distinct permission
+  (`billing.invoice.discount_approve`) beyond the base discount
+  permission — a placeholder threshold value, since the BRD document
+  itself isn't in this repo to read the real figure from (see
+  `docs/README.md`), flagged as such in the constant's own comment
+  rather than presented as a real spec'd number.
+  **Cross-module integration**: `pharmacy.services.dispense_medication()`
+  now calls `add_line_item()` for real — `StockBatch.unit_cost` is the
+  one place in the whole Phase 1 schema where genuine per-unit pricing
+  data exists. OPD's consultation fee and Laboratory's per-test pricing
+  are deliberately **not** wired the same way: neither `Consultation` nor
+  `LabOrderItem` defines a price field anywhere in the Data Dictionary,
+  and inventing one would mean charging a number the spec never
+  specified — a different kind of gap than "not yet wired," flagged as
+  such rather than blurred together.
 
 ### Security
 - **Cross-facility IDOR in every child-resource FK field.** DRF's default

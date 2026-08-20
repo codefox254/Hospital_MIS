@@ -19,10 +19,14 @@ docs/       In-repo reference documents
 
 ## Status
 
-Milestone 0 (foundation) is in progress: project scaffolding, the `core`
-(facility/department + shared base models), `accounts` (identity, RBAC, JWT
-auth, MFA), and `audit` (independent audit log) Django apps. See
-`CHANGELOG.md` for what has actually landed.
+Phase 1 backend is complete (Milestones 0-6): `core`, `accounts`, `audit`,
+`patients`, `appointments`, `opd`, `laboratory`, `pharmacy`, and `billing` —
+the full module set the Data Dictionary defines as the minimum for a single
+facility to run its day-to-day OPD operation end-to-end. See
+`CHANGELOG.md` for what actually landed in each, including the deliberately
+deferred integration points (no pricing catalog for OPD/Lab billing, no
+notifications app yet, M-Pesa is a stub pending real Daraja credentials).
+`web/` and `mobile/` (Milestones 7-8) haven't started.
 
 ## Local development
 

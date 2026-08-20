@@ -145,6 +145,45 @@ class TestDispenseMedication:
         with pytest.raises(WrongDrugForBatchError):
             dispense_medication(item, batch=wrong_batch, dispensed_by=pharmacist, qty_dispensed=1)
 
+    @pytest.mark.smoke
+    def test_dispensing_generates_a_billing_line_item(self):
+        from apps.billing.models import InvoiceLineItem
+
+        item = PrescriptionItemFactory(qty_prescribed=10)
+        batch = StockBatchFactory(
+            drug=item.drug,
+            facility=item.prescription.consultation.visit.facility,
+            quantity_on_hand=100,
+            unit_cost="15.50",
+        )
+        pharmacist = UserFactory(facility=item.prescription.consultation.visit.facility)
+
+        record = dispense_medication(item, batch=batch, dispensed_by=pharmacist, qty_dispensed=4)
+
+        line_item = InvoiceLineItem.objects.get(
+            source_module="pharmacy", source_reference_id=record.id
+        )
+        assert line_item.amount == 62  # 15.50 * 4
+        assert line_item.invoice.patient_id == item.prescription.patient_id
+
+    def test_a_batch_with_no_unit_cost_skips_billing_without_erroring(self):
+        from apps.billing.models import InvoiceLineItem
+
+        item = PrescriptionItemFactory(qty_prescribed=10)
+        batch = StockBatchFactory(
+            drug=item.drug,
+            facility=item.prescription.consultation.visit.facility,
+            quantity_on_hand=100,
+            unit_cost=None,
+        )
+        pharmacist = UserFactory(facility=item.prescription.consultation.visit.facility)
+
+        record = dispense_medication(item, batch=batch, dispensed_by=pharmacist, qty_dispensed=4)
+
+        assert not InvoiceLineItem.objects.filter(
+            source_module="pharmacy", source_reference_id=record.id
+        ).exists()
+
     def test_two_partial_dispenses_accumulate_toward_the_prescribed_quantity(self):
         item = PrescriptionItemFactory(qty_prescribed=10)
         batch = StockBatchFactory(
