@@ -51,6 +51,28 @@ All notable changes to this project are documented in this file.
   child records without their own `facility` column (these six — Data
   Dictionary §3 doesn't define one for them) resolve it through their
   parent instead of denormalizing a column the schema doesn't have.
+- `appointments` app (Milestone 2): `DoctorSchedule`, `Appointment`,
+  `QueueEntry`, `AppointmentReminder`, availability computation, booking
+  with a real DB-level double-booking guard (`UniqueConstraint` on
+  doctor+scheduled_at for active statuses, not just an app-level check),
+  check-in with a live queue publish over Django Channels, and a custom
+  JWT auth middleware for the WebSocket layer (the API is JWT bearer, not
+  session cookies, so Channels' stock `AuthMiddlewareStack` doesn't apply).
+- `opd` app (Milestone 3): `Visit`, `Vitals`, `Consultation`, `Diagnosis`,
+  `ConsultationAddendum` (Data Dictionary §5; Solution Spec Flow 5.3).
+  `start_visit()` creates a Visit and its empty draft Consultation
+  together and, when started from a checked-in Appointment, moves it to
+  `in_consultation`. Vitals/Diagnosis/Addendum are create-and-view-only —
+  point-in-time clinical facts corrected by adding a new one, never by
+  editing history. `complete_consultation()` locks the note (BRD §6.3:
+  further changes require an addendum, never a silent edit) and closes
+  out the Visit and its Appointment. Out-of-threshold vitals readings
+  enqueue a notification task — currently a stub, since the dedicated
+  notifications app doesn't exist yet (same gap already flagged in
+  `appointments`). Dispatching Lab/Radiology/Pharmacy orders and
+  generating billing line items on consultation completion (Solution Spec
+  Flow 5.3 steps 4 and 6) is deliberately not done here either — those
+  apps are later milestones; flagged, not silently skipped.
 
 ### Fixed
 - The standard error envelope was reading an exception's *class* default
