@@ -28,7 +28,17 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 # platform's actual authorization is entirely the custom apps.accounts RBAC
 # engine (Role/Permission/UserRole, TRD §4.3) — never contrib.auth's
 # Group/Permission tables, which are unused by any view or permission class.
+#
+# "daphne" must be the very first INSTALLED_APPS entry (Channels convention)
+# so it monkey-patches `runserver` into serving ASGI (HTTP + WebSocket)
+# instead of Django's default WSGI-only dev server — otherwise the queue
+# WebSocket (TRD §4.4) is unreachable in local dev even though the consumer
+# and routing are wired up correctly. Production still serves WSGI-only via
+# gunicorn (config/wsgi.py) — real ASGI serving in production is a TRD §11
+# deployment-topology decision out of scope for this milestone; flagged, not
+# silently solved.
 DJANGO_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -38,6 +48,7 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
+    "channels",
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
@@ -52,6 +63,7 @@ LOCAL_APPS = [
     "apps.accounts",
     "apps.audit",
     "apps.patients",
+    "apps.appointments",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

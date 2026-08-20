@@ -10,6 +10,7 @@ django-celery-beat==2.9.0
 redis==5.0.7
 channels==4.1.0
 channels-redis==4.2.0
+daphne==4.2.2
 django-cors-headers==4.4.0
 argon2-cffi==23.1.0
 pyotp==2.9.0
