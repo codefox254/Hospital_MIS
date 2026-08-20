@@ -1,0 +1,7 @@
+# Historical false positive: a placeholder Fernet key for CI's
+# MFA_SECRET_ENCRYPTION_KEY, committed briefly in .github/workflows/backend-ci.yml
+# before being replaced with a key generated fresh at CI runtime (see that
+# file's history). Never used to protect any real data — CI-only, and no
+# longer even present in the workflow. Kept as an ignore entry rather than
+# rewriting the already-pushed commit history that contains it.
+4f4d8d21fb827132c0b16e49558658d2473a9b4c:.github/workflows/backend-ci.yml:generic-api-key:31
