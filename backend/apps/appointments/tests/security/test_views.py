@@ -131,6 +131,23 @@ class TestAppointmentPermissionBoundary:
         assert response.status_code == 200
         assert response.data["queue_number"] == 1
 
+    def test_cannot_reassign_an_appointment_to_a_doctor_in_another_facility(self, client):
+        facility = FacilityFactory()
+        other_facility = FacilityFactory()
+        appointment = AppointmentFactory(
+            facility=facility, department=DepartmentFactory(facility=facility)
+        )
+        other_doctor = UserFactory(facility=other_facility)
+        user = _user_with_permissions(facility, "appointments.appointment.update")
+        client.force_authenticate(user=user)
+
+        response = client.patch(
+            reverse("appointments:appointment-detail", args=[appointment.pk]),
+            {"doctor": str(other_doctor.pk)},
+            format="json",
+        )
+        assert response.status_code == 400
+
 
 class TestAppointmentFacilityIsolation:
     def test_appointments_from_other_facilities_are_not_listed(self, client):
@@ -201,6 +218,50 @@ class TestDoctorSchedulePermissionBoundary:
             format="json",
         )
         assert response.status_code == 201
+
+    def test_cannot_create_a_schedule_against_a_doctor_in_another_facility(self, client):
+        facility = FacilityFactory()
+        other_facility = FacilityFactory()
+        department = DepartmentFactory(facility=facility)
+        other_doctor = UserFactory(facility=other_facility)
+        user = _user_with_permissions(facility, "appointments.doctor_schedule.create")
+        client.force_authenticate(user=user)
+
+        response = client.post(
+            reverse("appointments:doctor-schedule-list"),
+            {
+                "doctor": str(other_doctor.pk),
+                "department": str(department.pk),
+                "day_of_week": 0,
+                "start_time": "09:00:00",
+                "end_time": "17:00:00",
+                "slot_duration_minutes": 30,
+            },
+            format="json",
+        )
+        assert response.status_code == 400
+
+    def test_cannot_create_a_schedule_against_a_department_in_another_facility(self, client):
+        facility = FacilityFactory()
+        other_facility = FacilityFactory()
+        doctor = UserFactory(facility=facility)
+        other_department = DepartmentFactory(facility=other_facility)
+        user = _user_with_permissions(facility, "appointments.doctor_schedule.create")
+        client.force_authenticate(user=user)
+
+        response = client.post(
+            reverse("appointments:doctor-schedule-list"),
+            {
+                "doctor": str(doctor.pk),
+                "department": str(other_department.pk),
+                "day_of_week": 0,
+                "start_time": "09:00:00",
+                "end_time": "17:00:00",
+                "slot_duration_minutes": 30,
+            },
+            format="json",
+        )
+        assert response.status_code == 400
 
 
 class TestAvailabilityEndpoint:

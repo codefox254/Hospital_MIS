@@ -210,6 +210,23 @@ class TestRelatedEntityFacilityIsolation:
         returned_ids = {row["id"] for row in response.data["results"]}
         assert returned_ids == {own_record.data["id"]}
 
+    def test_cannot_create_a_record_against_a_patient_in_another_facility(self, client, resource):
+        facility = FacilityFactory()
+        other_facility = FacilityFactory()
+        other_patient = PatientFactory(facility=other_facility)
+
+        creator = _user_with_permissions(
+            facility, f"patients.{resource['permission_resource']}.create"
+        )
+        client.force_authenticate(user=creator)
+        response = client.post(
+            _list_url(resource["basename"]),
+            resource["create_payload"](other_patient),
+            format="json",
+        )
+
+        assert response.status_code == 400
+
 
 @pytest.mark.parametrize("resource", RESOURCES, ids=lambda r: r["basename"])
 class TestRelatedEntityDeactivate:

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.core.serializers import FacilityScopedPrimaryKeyRelatedField
 from apps.opd.models import Consultation, ConsultationAddendum, Diagnosis, Visit, Vitals
 
 COMMON_READ_ONLY_FIELDS = ["id", "created_at", "updated_at"]
@@ -25,6 +26,10 @@ class VisitSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "facility",
+            "patient",
+            "appointment",
+            "doctor",
+            "department",
             "status",
             "checked_in_at",
             "completed_at",
@@ -42,6 +47,8 @@ class StartVisitSerializer(serializers.Serializer):
 
 
 class VitalsSerializer(serializers.ModelSerializer):
+    visit = FacilityScopedPrimaryKeyRelatedField(model=Visit, facility_lookup="facility")
+
     class Meta:
         model = Vitals
         fields = [
@@ -90,6 +97,10 @@ class ConsultationSerializer(serializers.ModelSerializer):
 
 
 class DiagnosisSerializer(serializers.ModelSerializer):
+    consultation = FacilityScopedPrimaryKeyRelatedField(
+        model=Consultation, facility_lookup="visit__facility"
+    )
+
     class Meta:
         model = Diagnosis
         fields = [
@@ -105,6 +116,10 @@ class DiagnosisSerializer(serializers.ModelSerializer):
 
 
 class ConsultationAddendumSerializer(serializers.ModelSerializer):
+    consultation = FacilityScopedPrimaryKeyRelatedField(
+        model=Consultation, facility_lookup="visit__facility"
+    )
+
     class Meta:
         model = ConsultationAddendum
         fields = ["id", "consultation", "author", "text", "created_at"]

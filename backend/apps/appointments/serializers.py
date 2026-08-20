@@ -1,11 +1,18 @@
 from rest_framework import serializers
 
+from apps.accounts.models import User
 from apps.appointments.models import Appointment, AppointmentReminder, DoctorSchedule, QueueEntry
+from apps.core.models import Department
+from apps.core.serializers import FacilityScopedPrimaryKeyRelatedField
+from apps.patients.models import Patient
 
 COMMON_READ_ONLY_FIELDS = ["id", "created_at", "updated_at"]
 
 
 class DoctorScheduleSerializer(serializers.ModelSerializer):
+    doctor = FacilityScopedPrimaryKeyRelatedField(model=User, facility_lookup="facility")
+    department = FacilityScopedPrimaryKeyRelatedField(model=Department, facility_lookup="facility")
+
     class Meta:
         model = DoctorSchedule
         fields = [
@@ -24,6 +31,10 @@ class DoctorScheduleSerializer(serializers.ModelSerializer):
 
 
 class AppointmentSerializer(serializers.ModelSerializer):
+    patient = FacilityScopedPrimaryKeyRelatedField(model=Patient, facility_lookup="facility")
+    doctor = FacilityScopedPrimaryKeyRelatedField(model=User, facility_lookup="facility")
+    department = FacilityScopedPrimaryKeyRelatedField(model=Department, facility_lookup="facility")
+
     class Meta:
         model = Appointment
         fields = [

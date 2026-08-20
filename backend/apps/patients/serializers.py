@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.core.serializers import FacilityScopedPrimaryKeyRelatedField
 from apps.patients.models import (
     Allergy,
     ChronicCondition,
@@ -11,6 +12,10 @@ from apps.patients.models import (
 )
 
 COMMON_READ_ONLY_FIELDS = ["id", "deleted_at", "created_at", "updated_at"]
+
+
+def _patient_field():
+    return FacilityScopedPrimaryKeyRelatedField(model=Patient, facility_lookup="facility")
 
 
 class PatientSerializer(serializers.ModelSerializer):
@@ -49,6 +54,8 @@ class PatientSerializer(serializers.ModelSerializer):
 
 
 class GuardianSerializer(serializers.ModelSerializer):
+    patient = _patient_field()
+
     class Meta:
         model = Guardian
         fields = ["id", "patient", "name", "relationship", "phone", "access_revoked_at"] + [
@@ -58,6 +65,8 @@ class GuardianSerializer(serializers.ModelSerializer):
 
 
 class EmergencyContactSerializer(serializers.ModelSerializer):
+    patient = _patient_field()
+
     class Meta:
         model = EmergencyContact
         fields = ["id", "patient", "name", "relationship", "phone"] + [
@@ -67,6 +76,8 @@ class EmergencyContactSerializer(serializers.ModelSerializer):
 
 
 class AllergySerializer(serializers.ModelSerializer):
+    patient = _patient_field()
+
     class Meta:
         model = Allergy
         fields = ["id", "patient", "substance", "reaction", "severity"] + [
@@ -76,6 +87,8 @@ class AllergySerializer(serializers.ModelSerializer):
 
 
 class ChronicConditionSerializer(serializers.ModelSerializer):
+    patient = _patient_field()
+
     class Meta:
         model = ChronicCondition
         fields = ["id", "patient", "condition", "diagnosed_date"] + [
@@ -85,6 +98,8 @@ class ChronicConditionSerializer(serializers.ModelSerializer):
 
 
 class ConsentSerializer(serializers.ModelSerializer):
+    patient = _patient_field()
+
     class Meta:
         model = Consent
         fields = ["id", "patient", "type", "granted_at", "revoked_at", "is_active"] + [
@@ -94,6 +109,8 @@ class ConsentSerializer(serializers.ModelSerializer):
 
 
 class PatientInsuranceSerializer(serializers.ModelSerializer):
+    patient = _patient_field()
+
     class Meta:
         model = PatientInsurance
         fields = [

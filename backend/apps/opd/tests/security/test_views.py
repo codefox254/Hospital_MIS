@@ -148,6 +148,22 @@ class TestVitalsPermissionBoundary:
         assert response.status_code == 201
         assert response.data["recorded_by"] == user.pk
 
+    def test_cannot_record_vitals_against_a_visit_in_another_facility(self, client):
+        facility = FacilityFactory()
+        other_facility = FacilityFactory()
+        other_visit = VisitFactory(
+            department=DepartmentFactory(facility=other_facility), facility=other_facility
+        )
+        user = _user_with_permissions(facility, "opd.vitals.create")
+        client.force_authenticate(user=user)
+
+        response = client.post(
+            reverse("opd:vitals-list"),
+            {"visit": str(other_visit.pk), "bp_systolic": 120, "pulse": 72},
+            format="json",
+        )
+        assert response.status_code == 400
+
 
 class TestConsultationPermissionBoundary:
     def test_view_permission_does_not_grant_update(self, client):
@@ -272,6 +288,24 @@ class TestDiagnosisPermissionBoundary:
         )
         assert response.status_code == 201
 
+    def test_cannot_add_a_diagnosis_against_a_consultation_in_another_facility(self, client):
+        facility = FacilityFactory()
+        other_facility = FacilityFactory()
+        other_consultation = ConsultationFactory(
+            visit=VisitFactory(
+                department=DepartmentFactory(facility=other_facility), facility=other_facility
+            )
+        )
+        user = _user_with_permissions(facility, "opd.diagnosis.create")
+        client.force_authenticate(user=user)
+
+        response = client.post(
+            reverse("opd:diagnosis-list"),
+            {"consultation": str(other_consultation.pk), "description": "Flu", "type": "primary"},
+            format="json",
+        )
+        assert response.status_code == 400
+
     def test_cannot_add_a_diagnosis_to_a_locked_consultation_via_the_api(self, client):
         facility = FacilityFactory()
         consultation = ConsultationFactory(
@@ -335,6 +369,25 @@ class TestAddendumPermissionBoundary:
         response = client.post(
             reverse("opd:addendum-list"),
             {"consultation": str(consultation.pk), "text": "Too early"},
+            format="json",
+        )
+        assert response.status_code == 400
+
+    def test_cannot_add_an_addendum_against_a_consultation_in_another_facility(self, client):
+        facility = FacilityFactory()
+        other_facility = FacilityFactory()
+        other_consultation = ConsultationFactory(
+            visit=VisitFactory(
+                department=DepartmentFactory(facility=other_facility), facility=other_facility
+            )
+        )
+        complete_consultation(other_consultation, actor=other_consultation.visit.doctor)
+        user = _user_with_permissions(facility, "opd.addendum.create")
+        client.force_authenticate(user=user)
+
+        response = client.post(
+            reverse("opd:addendum-list"),
+            {"consultation": str(other_consultation.pk), "text": "Sneaky cross-facility note"},
             format="json",
         )
         assert response.status_code == 400
