@@ -31,13 +31,19 @@ def get_available_slots(*, doctor, department, date):
         doctor=doctor, department=department, day_of_week=day_of_week, deleted_at__isnull=True
     )
 
-    candidate_slots = []
+    # A set, not a list: two overlapping DoctorSchedule rows for the same
+    # doctor/department/day (e.g. one added without noticing an existing
+    # one already covers that window) must not surface the same slot
+    # twice — found live, via the web console, as a React "duplicate key"
+    # warning that traced back to a real duplicate in the API response,
+    # not a frontend rendering bug.
+    candidate_slots = set()
     for schedule in schedules:
         current = django_timezone.make_aware(datetime.combine(date, schedule.start_time))
         end = django_timezone.make_aware(datetime.combine(date, schedule.end_time))
         step = timedelta(minutes=schedule.slot_duration_minutes)
         while current + step <= end:
-            candidate_slots.append(current)
+            candidate_slots.add(current)
             current += step
 
     booked_slots = set(

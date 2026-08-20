@@ -4,6 +4,8 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { RequireAuth, RequirePermission } from "./components/layout/RequireAuth";
 import { queryClient } from "./lib/queryClient";
+import { AppointmentsListPage } from "./pages/appointments/AppointmentsListPage";
+import { BookAppointmentPage } from "./pages/appointments/BookAppointmentPage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
 import { PatientDetailPage } from "./pages/patients/PatientDetailPage";
@@ -47,6 +49,23 @@ export default function App() {
               element={
                 <RequirePermission code="patients.patient.view">
                   <PatientDetailPage />
+                </RequirePermission>
+              }
+            />
+
+            <Route
+              path="/appointments"
+              element={
+                <RequirePermission code="appointments.appointment.view">
+                  <AppointmentsListPage />
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="/appointments/new"
+              element={
+                <RequirePermission code="appointments.appointment.create">
+                  <BookAppointmentPage />
                 </RequirePermission>
               }
             />

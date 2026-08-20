@@ -48,6 +48,29 @@ class TestGetAvailableSlots:
         assert slots[1].time() == datetime.time(9, 30)
         assert schedule.doctor_id == doctor.id  # sanity: schedule actually used
 
+    def test_overlapping_schedules_do_not_produce_duplicate_slots(self):
+        """Two DoctorSchedule rows covering the same window for the same
+        doctor/department/day — found live via the web console, where it
+        surfaced as a React duplicate-key warning traced back to the API
+        genuinely returning the same slot twice."""
+        department = DepartmentFactory()
+        doctor = UserFactory(facility=department.facility)
+        for _ in range(2):
+            DoctorScheduleFactory(
+                doctor=doctor,
+                department=department,
+                day_of_week=0,
+                start_time=datetime.time(9, 0),
+                end_time=datetime.time(10, 0),
+                slot_duration_minutes=30,
+            )
+        target_date = _next_monday()
+
+        slots = get_available_slots(doctor=doctor, department=department, date=target_date)
+
+        assert len(slots) == 2
+        assert len(slots) == len(set(slots))
+
     def test_no_schedule_for_that_day_returns_no_slots(self):
         department = DepartmentFactory()
         doctor = UserFactory(facility=department.facility)

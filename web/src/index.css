@@ -334,3 +334,200 @@ button {
   margin: 0;
   font-size: 0.95rem;
 }
+
+/* --- Appointments --- */
+.appointments-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.filter-row {
+  margin-bottom: 1rem;
+}
+
+.filter-row select {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.status-scheduled {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-checked_in {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-in_consultation {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.status-completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-cancelled,
+.status-no_show {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.row-actions button {
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+}
+
+.queue-panel {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.queue-panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.queue-panel select {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.queue-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.queue-list li.queue-called {
+  opacity: 0.6;
+}
+
+.queue-number {
+  font-weight: 700;
+}
+
+.queue-list button {
+  margin-left: auto;
+  border: none;
+  background: var(--accent);
+  color: white;
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+}
+
+.called-badge {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.priority-priority {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.priority-emergency {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* --- Booking form --- */
+.booking-grid {
+  max-width: 760px;
+}
+
+.typeahead-results {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.typeahead-results li button {
+  width: 100%;
+  text-align: left;
+  background: white;
+  border: none;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.typeahead-results li:last-child button {
+  border-bottom: none;
+}
+
+.typeahead-results li button:hover {
+  background: #f5f6f8;
+}
+
+.slot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Higher specificity than `.form-grid button` (same 0-1-1 weight would
+   otherwise lose to it purely on source order — verified live, every
+   slot rendered as if selected until this was scoped under .slot-grid). */
+.slot-grid .slot-button {
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--text);
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.slot-grid .slot-button.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}

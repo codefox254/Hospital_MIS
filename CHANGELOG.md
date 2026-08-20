@@ -49,9 +49,40 @@ All notable changes to this project are documented in this file.
   backend aggregation/analytics endpoint exists to back those numbers,
   and Inpatients/bed data isn't built at all. Fabricating the numbers
   would be worse than an honest placeholder.
-- Remaining for Milestone 7: Appointments, OPD, Laboratory, Pharmacy,
-  and Billing module screens (same vertical-slice pattern as Patients),
-  the WebSocket-backed live queue panel (TRD §5.2), and the shared
+- `GET /api/v1/core/departments/` and `GET /api/v1/accounts/users/`
+  (backend additions): the booking/scheduling forms need to populate
+  department and doctor pickers, and neither endpoint existed — every
+  prior use of these models took a UUID the caller already knew. Both
+  read-only, facility-scoped, gated by the standard `HasModulePermission`
+  convention (`core.department.view`, `accounts.user.view`) — same
+  reasoning as `/auth/me/`: exposing already-scoped data for browsing,
+  not a new authorization decision.
+- Appointments module: scheduling/booking form (patient typeahead,
+  department/doctor pickers, live availability, slot picker), the
+  appointment list with check-in/cancel actions and status pills, and a
+  **live WebSocket queue panel** (TRD §5.2/§4.4) — the first real-time
+  UI element, subscribing to the same `QueueConsumer` the backend
+  shipped in Milestone 2. On any `queue_update` push it invalidates the
+  query cache and lets the normal refetch pull the new state, rather
+  than hand-merging the pushed payload — simpler, and correct even if a
+  message is missed or arrives out of order.
+- Two real bugs caught live by this module, both fixed at the root
+  rather than papered over in the frontend:
+  - `get_available_slots()` (`apps/appointments/services.py`) built its
+    candidate-slot list without deduplicating across schedule rows — two
+    overlapping `DoctorSchedule` entries for the same doctor/department/
+    day produced the same slot twice. Surfaced as a React
+    "duplicate key" console warning during the live browser walkthrough,
+    traced back to a genuine duplicate in the API response, not a
+    rendering bug. Fixed by building the candidate set as a `set`, not a
+    list; regression test added.
+  - `.slot-button`'s CSS lost a specificity fight with the more generic
+    `.form-grid button` rule (equal specificity, later in the
+    stylesheet) — every slot rendered as if selected. Scoped under
+    `.slot-grid` to fix; also caught only by looking at the actual
+    screenshot, not by the absence of a build/lint error.
+- Remaining for Milestone 7: OPD, Laboratory, Pharmacy, and Billing
+  module screens (same vertical-slice pattern), and the shared
   design-system extraction the TRD calls for once enough screens exist
   to know what's actually shared.
 
