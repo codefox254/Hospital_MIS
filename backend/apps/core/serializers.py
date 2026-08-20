@@ -17,6 +17,15 @@ check.
 
 from rest_framework import serializers
 
+from apps.core.models import Department
+
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
+        fields = ["id", "facility", "name", "code", "parent_department"]
+        read_only_fields = fields
+
 
 class FacilityScopedPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
     def __init__(self, model, facility_lookup="facility", **kwargs):

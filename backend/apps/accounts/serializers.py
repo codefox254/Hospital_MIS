@@ -14,6 +14,23 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.accounts import mfa
 from apps.accounts.constants import PRIVILEGED_ROLE_NAMES
+from apps.accounts.models import User
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """
+    Read-only, minimal fields — this backs staff pickers (the doctor
+    select on scheduling/booking forms), not a user-management screen.
+    No email/phone beyond what's already visible facility-wide, no role/
+    permission data (that's `/auth/me/`'s job for the requester's own
+    account, and admin-only for anyone else's — not built yet).
+    """
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "first_name", "last_name"]
+        read_only_fields = fields
+
 
 REFRESH_LIFETIME_BY_CLIENT = {
     "web": timedelta(days=7),

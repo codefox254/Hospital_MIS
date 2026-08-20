@@ -7,8 +7,9 @@ privileged, not-yet-MFA-enabled account (see serializers.py).
 """
 
 from django.contrib.auth import authenticate
+from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
-from rest_framework import serializers, status
+from rest_framework import serializers, status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -17,7 +18,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView as BaseTokenObtai
 from rest_framework_simplejwt.views import TokenRefreshView as BaseTokenRefreshView
 
 from apps.accounts import mfa
-from apps.accounts.serializers import ClientAwareTokenObtainPairSerializer
+from apps.accounts.models import User
+from apps.accounts.permissions import HasModulePermission
+from apps.accounts.serializers import ClientAwareTokenObtainPairSerializer, UserSerializer
 from apps.accounts.services import get_effective_permission_codes
 
 
@@ -141,3 +144,21 @@ class MeView(APIView):
                 "permissions": sorted(get_effective_permission_codes(user)),
             }
         )
+
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """Backs staff pickers (the doctor select on scheduling/booking
+    forms) — see UserSerializer's docstring for what this deliberately
+    doesn't expose."""
+
+    serializer_class = UserSerializer
+    permission_classes = [HasModulePermission]
+    permission_code = "accounts.user.view"
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = []
+    queryset = User.objects.none()
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return User.objects.none()
+        return User.objects.filter(facility=self.request.user.facility, is_active=True)
