@@ -97,21 +97,30 @@ def _recompute_totals(invoice, *, actor=None, ip_address=None):
 
     subtotal = invoice.line_items.aggregate(total=Sum("amount"))["total"] or 0
     total = subtotal - invoice.discount + invoice.tax
+    # CONFIRMED and REFUNDED both represent money that was actually
+    # received — a payment approve_refund() has fully refunded still
+    # belongs in "paid", with the refund itself (subtracted below) being
+    # what nets it back out. Filtering to CONFIRMED only would double-count
+    # the reversal: once as the payment silently dropping out of "paid",
+    # and again as the refund amount added back — inflating balance past
+    # the invoice's own total, caught live via the web console on a
+    # partial refund.
     paid = (
-        invoice.payments.filter(status=Payment.Status.CONFIRMED).aggregate(total=Sum("amount"))[
-            "total"
-        ]
+        invoice.payments.filter(
+            status__in=[Payment.Status.CONFIRMED, Payment.Status.REFUNDED]
+        ).aggregate(total=Sum("amount"))["total"]
         or 0
     )
     refunded = invoice.refunds.aggregate(total=Sum("amount"))["total"] or 0
-    balance = total - paid + refunded
+    net_paid = paid - refunded
+    balance = total - net_paid
 
     invoice.subtotal = subtotal
     invoice.total = total
     invoice.balance = balance
     if balance <= 0:
         invoice.status = Invoice.Status.PAID
-    elif paid > 0:
+    elif net_paid > 0:
         invoice.status = Invoice.Status.PARTIALLY_PAID
     elif invoice.status not in (Invoice.Status.WRITTEN_OFF, Invoice.Status.PENDING_CONFIRMATION):
         invoice.status = Invoice.Status.OPEN
@@ -236,9 +245,15 @@ def approve_refund(invoice, payment, *, amount, reason, approved_by, actor=None,
         raise SameCashierRefundError(
             "The cashier who took this payment cannot also approve its refund."
         )
-    if amount > payment.amount:
+
+    from django.db.models import Sum
+
+    already_refunded = payment.refunds.aggregate(total=Sum("amount"))["total"] or 0
+    remaining = payment.amount - already_refunded
+    if amount > remaining:
         raise RefundExceedsPaymentError(
-            f"Cannot refund {amount}, payment was only {payment.amount}."
+            f"Cannot refund {amount}, only {remaining} of this payment remains refundable "
+            f"({already_refunded} already refunded of {payment.amount})."
         )
 
     refund = Refund(
@@ -251,8 +266,16 @@ def approve_refund(invoice, payment, *, amount, reason, approved_by, actor=None,
     )
     refund.save(actor=actor, ip_address=ip_address)
 
-    payment.status = Payment.Status.REFUNDED
-    payment.save(actor=actor, ip_address=ip_address)
+    # Only a *full* refund flips the payment's own status — Payment.Status
+    # has no "partially_refunded" state (Data Dictionary §8), and marking
+    # a payment fully REFUNDED after only part of it came back would make
+    # _recompute_totals() stop counting any of it as paid, inflating the
+    # invoice's balance past its own total. A partial refund is expressed
+    # entirely through the Refund row and the balance calculation below,
+    # not through the original payment's status.
+    if already_refunded + amount >= payment.amount:
+        payment.status = Payment.Status.REFUNDED
+        payment.save(actor=actor, ip_address=ip_address)
 
     _recompute_totals(invoice, actor=actor, ip_address=ip_address)
     return refund

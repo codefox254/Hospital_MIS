@@ -120,9 +120,51 @@ All notable changes to this project are documented in this file.
   stock batch, prescribed it against a real consultation, dispensed it,
   watched stock decrement for real (200 → 185) and the prescription
   status flip to `dispensed` — zero console errors.
-- Remaining for Milestone 7: Billing module screens, and the shared
-  design-system extraction the TRD calls for once enough screens exist
-  to know what's actually shared.
+- Billing module (Milestone 7 vertical slices complete — all six Phase 1
+  modules now have working screens): invoice list, and a detail page
+  driving line items, payment recording (cash/card/bank/insurance),
+  M-Pesa STK push with the invoice polling every 3s while
+  `pending_confirmation` (the one screen with no WebSocket channel to
+  subscribe to instead — polling is the only mechanism here, not a
+  fallback for one that exists), payments, and refund approval.
+
+  **A real, serious bug caught live**: approving a *partial* refund
+  unconditionally flipped the original payment's status to `refunded` —
+  Payment.Status has no "partially refunded" state (Data Dictionary
+  §8). Since `_recompute_totals()` only counted `CONFIRMED` payments as
+  "paid", that made the *entire* original payment stop counting, not
+  just the refunded slice — refunding 10 of a 127.50 payment pushed the
+  invoice's balance to 137.50, *more than the invoice's own total*.
+  Reproduced live: paid an invoice in full via the console, refunded a
+  small amount as one user, watched the balance go higher than the
+  total instead of down. Fixed at the root in
+  `apps/billing/services.py`: `approve_refund()` now only flips a
+  payment to `refunded` once its *cumulative* refunded amount reaches
+  its full value (tracked via `payment.refunds`, not a single refund's
+  amount), and `RefundExceedsPaymentError` now checks against what
+  actually remains refundable, not the original payment amount — so two
+  partial refunds can no longer together exceed the payment either
+  (that was silently possible before). `_recompute_totals()` itself
+  also changed: `paid` now includes both `CONFIRMED` and `REFUNDED`
+  payments (a refunded payment still represents money that was really
+  received; the `Refund` row is what nets it back out), with a
+  `net_paid = paid - refunded` used consistently for both `balance` and
+  the open/partially-paid/paid status transitions — a fully-refunded
+  invoice now correctly reopens (`OPEN`, balance = total) instead of
+  showing a nonsensical inflated balance. 4 regression tests added,
+  including one asserting two partial refunds together can't exceed the
+  payment.
+
+  Verified end-to-end live twice more after the fix: a same-user refund
+  attempt correctly rejected with the error rendering inline (not a
+  silent failure), and the identical refund succeeded when approved by
+  a different (accountant) user, with the invoice balance landing on
+  the correct number both times.
+- Milestone 7's vertical-slice pass across all six modules is done.
+  Remaining: the shared design-system extraction the TRD calls for
+  (now that six modules exist, what's actually shared is knowable
+  rather than guessed upfront), and Milestone 8 (the FDO Health mobile
+  app) hasn't started.
 
 ### Added
 - Repository scaffolding: monorepo layout, `.gitignore`, root `README.md`,

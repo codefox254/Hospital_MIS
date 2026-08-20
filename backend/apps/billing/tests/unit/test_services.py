@@ -304,8 +304,6 @@ class TestApproveRefund:
         )
 
         assert refund.approved_by_id == accountant.id
-        payment.refresh_from_db()
-        assert payment.status == Payment.Status.REFUNDED
 
     def test_the_cashier_cannot_approve_their_own_refund(self):
         invoice = InvoiceFactory()
@@ -323,3 +321,66 @@ class TestApproveRefund:
 
         with pytest.raises(RefundExceedsPaymentError):
             approve_refund(invoice, payment, amount=200, reason="x", approved_by=accountant)
+
+    def test_a_partial_refund_does_not_flip_the_payment_to_fully_refunded(self):
+        """A payment.status of REFUNDED means no part of it counts as
+        'paid' anymore (_recompute_totals filters on it) — doing that
+        after only a partial refund would inflate the invoice's balance
+        past its own total. Caught live via the web console."""
+        invoice = InvoiceFactory()
+        cashier = UserFactory(facility=invoice.facility)
+        accountant = UserFactory(facility=invoice.facility)
+        add_line_item(
+            invoice,
+            source_module="opd",
+            source_reference_id="00000000-0000-0000-0000-000000000001",
+            description="Consultation fee",
+            unit_price="500.00",
+        )
+        payment = record_payment(
+            invoice, method=Payment.Method.CASH, amount=500, received_by=cashier
+        )
+
+        approve_refund(invoice, payment, amount=200, reason="Overcharged", approved_by=accountant)
+
+        payment.refresh_from_db()
+        invoice.refresh_from_db()
+        assert payment.status == Payment.Status.CONFIRMED
+        assert invoice.balance == 200
+        assert invoice.status == Invoice.Status.PARTIALLY_PAID
+
+    def test_a_full_refund_does_flip_the_payment_and_reopens_the_invoice(self):
+        invoice = InvoiceFactory()
+        cashier = UserFactory(facility=invoice.facility)
+        accountant = UserFactory(facility=invoice.facility)
+        add_line_item(
+            invoice,
+            source_module="opd",
+            source_reference_id="00000000-0000-0000-0000-000000000001",
+            description="Consultation fee",
+            unit_price="500.00",
+        )
+        payment = record_payment(
+            invoice, method=Payment.Method.CASH, amount=500, received_by=cashier
+        )
+
+        approve_refund(invoice, payment, amount=500, reason="Full refund", approved_by=accountant)
+
+        payment.refresh_from_db()
+        invoice.refresh_from_db()
+        assert payment.status == Payment.Status.REFUNDED
+        assert invoice.balance == 500
+        assert invoice.status == Invoice.Status.OPEN
+
+    def test_two_partial_refunds_cannot_together_exceed_the_payment(self):
+        invoice = InvoiceFactory()
+        cashier = UserFactory(facility=invoice.facility)
+        accountant = UserFactory(facility=invoice.facility)
+        payment = record_payment(
+            invoice, method=Payment.Method.CASH, amount=500, received_by=cashier
+        )
+
+        approve_refund(invoice, payment, amount=300, reason="x", approved_by=accountant)
+
+        with pytest.raises(RefundExceedsPaymentError):
+            approve_refund(invoice, payment, amount=300, reason="y", approved_by=accountant)

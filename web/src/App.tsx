@@ -11,6 +11,8 @@ import { DashboardPage } from "./pages/dashboard/DashboardPage";
 import { CreateLabOrderPage } from "./pages/laboratory/CreateLabOrderPage";
 import { LabOrderDetailPage } from "./pages/laboratory/LabOrderDetailPage";
 import { LabOrdersListPage } from "./pages/laboratory/LabOrdersListPage";
+import { InvoiceDetailPage } from "./pages/billing/InvoiceDetailPage";
+import { InvoicesListPage } from "./pages/billing/InvoicesListPage";
 import { ConsultationWorkspace } from "./pages/opd/ConsultationWorkspace";
 import { CreatePrescriptionPage } from "./pages/pharmacy/CreatePrescriptionPage";
 import { PharmacyCatalogPage } from "./pages/pharmacy/PharmacyCatalogPage";
@@ -159,6 +161,23 @@ export default function App() {
               element={
                 <RequirePermission code="pharmacy.prescription.view">
                   <PrescriptionDetailPage />
+                </RequirePermission>
+              }
+            />
+
+            <Route
+              path="/billing"
+              element={
+                <RequirePermission code="billing.invoice.view">
+                  <InvoicesListPage />
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="/billing/:id"
+              element={
+                <RequirePermission code="billing.invoice.view">
+                  <InvoiceDetailPage />
                 </RequirePermission>
               }
             />
