@@ -73,6 +73,36 @@ All notable changes to this project are documented in this file.
   generating billing line items on consultation completion (Solution Spec
   Flow 5.3 steps 4 and 6) is deliberately not done here either — those
   apps are later milestones; flagged, not silently skipped.
+- `laboratory` app (Milestone 4): `LabOrder`, `LabOrderItem`, `LabSample`,
+  `LabResult`, `LabResultValue` (Data Dictionary §6; Solution Spec Flow
+  5.4). Order status moves pending → collected → processing → completed
+  automatically as samples get collected and results get verified — no
+  separate status-update endpoint, it's a consequence of the real
+  actions. `verify_result()` enforces the technician/scientist separation
+  of duties at the service layer (BRD §6.6: the person who entered a
+  result can never also verify it) — `SelfVerificationError` if they
+  match. A critical value marks the result `is_critical` at entry but the
+  urgent (<60s, TRD §3.1) notification only fires on verify, matching
+  Flow 5.4 step 5 — same notifications-app stub gap already flagged in
+  `appointments`/`opd`.
+
+### Security
+- **Cross-facility IDOR in every child-resource FK field.** DRF's default
+  `PrimaryKeyRelatedField` queryset is unscoped unless a view validates
+  the referenced object's facility by hand; several didn't. Affected:
+  all six `patients` related-entity endpoints (Guardian, EmergencyContact,
+  Allergy, ChronicCondition, Consent, PatientInsurance — create and
+  update), `appointments`' `DoctorSchedule` (create and update) and
+  `Appointment` (update only — create was already safe), and `opd`'s
+  Vitals/Diagnosis/ConsultationAddendum (create). A user could reference
+  a parent object belonging to a *different facility* and it would
+  validate successfully — a real cross-tenant data leak/injection path
+  in a system holding clinical records. Fixed with
+  `apps.core.serializers.FacilityScopedPrimaryKeyRelatedField`, applied
+  at every affected field; 12 regression tests confirm cross-facility
+  references now return 400. Found while building `laboratory` — its
+  `LabSample.lab_order_item` field had the identical bug, which is what
+  prompted auditing the rest of the codebase for the same pattern.
 
 ### Fixed
 - The standard error envelope was reading an exception's *class* default
