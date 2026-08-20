@@ -55,14 +55,27 @@ class TestDepartment:
         assert child.parent_department == parent
         assert parent.sub_departments.first() == child
 
-    def test_deleting_parent_nulls_child_link_not_deletes_child(self):
+    def test_hard_delete_is_disabled(self):
+        """Department is audited (TRD §8.4) — delete() must never run."""
+        department = DepartmentFactory()
+        with pytest.raises(NotImplementedError):
+            department.delete()
+        assert Department.objects.filter(pk=department.pk).exists()
+
+    def test_soft_deleting_parent_preserves_child_link(self):
+        """
+        Unlike a hard delete's on_delete=SET_NULL cascade, soft-deleting a
+        parent must not touch the child's parent_department — the historical
+        relationship stays intact; callers check parent.deleted_at if they
+        care whether it's still active.
+        """
         parent = DepartmentFactory(name="Medicine")
         child = DepartmentFactory(
             facility=parent.facility, name="Cardiology", parent_department=parent
         )
-        parent.delete()
+        parent.soft_delete()
         child.refresh_from_db()
-        assert child.parent_department is None
+        assert child.parent_department_id == parent.pk
 
 
 class TestFacilityScopedManager:

@@ -8,6 +8,8 @@ import uuid
 from django.conf import settings
 from django.db import models
 
+from apps.core.mixins import AuditableModel
+
 
 class UUIDModel(models.Model):
     """UUID primary key — avoids record enumeration across facilities (TRD §8.1)."""
@@ -89,7 +91,7 @@ class FacilityScopedModel(UUIDModel, TimeStampedModel):
         abstract = True
 
 
-class Department(FacilityScopedModel):
+class Department(FacilityScopedModel, AuditableModel):
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=20)
     parent_department = models.ForeignKey(

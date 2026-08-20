@@ -44,11 +44,13 @@ THIRD_PARTY_APPS = [
     "drf_spectacular",
     "corsheaders",
     "django_celery_beat",
+    "django_filters",
 ]
 
 LOCAL_APPS = [
     "apps.core",
     "apps.accounts",
+    "apps.audit",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
