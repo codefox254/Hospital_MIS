@@ -44,6 +44,13 @@ All notable changes to this project are documented in this file.
   `permission_codes_by_action` so a ViewSet's custom actions (like
   `deactivate`) can require a different permission than `create` even
   though both are POST.
+- `patients` app, Milestone 1 completion: `Guardian`, `EmergencyContact`,
+  `Allergy`, `ChronicCondition`, `Consent`, and `PatientInsurance` — each
+  scoped to its parent `Patient`, full CRUD + `deactivate` API, own
+  permission codes. `AuditableModel` gained `_get_audit_facility_id()` so
+  child records without their own `facility` column (these six — Data
+  Dictionary §3 doesn't define one for them) resolve it through their
+  parent instead of denormalizing a column the schema doesn't have.
 
 ### Fixed
 - The standard error envelope was reading an exception's *class* default

@@ -57,6 +57,17 @@ class AuditableModel(models.Model):
                 diff[name] = {"old": _serialize(old_value), "new": _serialize(new_value)}
         return diff
 
+    def _get_audit_facility_id(self):
+        """
+        Default assumes the model itself is a FacilityScopedModel (has a
+        `facility` FK). A child record with no facility of its own (e.g.
+        Guardian, Allergy — scoped only via their parent Patient) overrides
+        this to resolve the facility through that relation instead of
+        denormalizing a facility_id column the Data Dictionary doesn't
+        define for it.
+        """
+        return self.facility_id
+
     def _write_audit_entry(self, *, action, diff, actor, ip_address):
         from apps.audit.models import AuditLogEntry
 
@@ -64,7 +75,7 @@ class AuditableModel(models.Model):
             return
         AuditLogEntry.objects.create(
             actor=actor,
-            facility_id=self.facility_id,
+            facility_id=self._get_audit_facility_id(),
             model_name=self._meta.label,
             record_id=self.pk,
             action=action,
