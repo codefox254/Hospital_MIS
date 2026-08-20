@@ -1,14 +1,18 @@
+from datetime import timedelta
+
 import pytest
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from apps.accounts.factories import (
+    BreakGlassGrantFactory,
     PermissionFactory,
     RoleFactory,
     RolePermissionFactory,
     UserFactory,
     UserRoleFactory,
 )
-from apps.accounts.models import User
+from apps.accounts.models import BreakGlassGrant, User
 from apps.core.factories import DepartmentFactory, FacilityFactory
 
 pytestmark = pytest.mark.django_db
@@ -110,3 +114,30 @@ class TestRolePermissionEngine:
         UserRoleFactory(user=user, role=role_a)
         UserRoleFactory(user=user, role=role_b)
         assert User.objects.get(pk=user.pk).user_roles.count() == 2
+
+
+class TestBreakGlassGrant:
+    def test_empty_reason_is_rejected(self):
+        with pytest.raises(IntegrityError), transaction.atomic():
+            BreakGlassGrantFactory(reason="")
+
+    def test_is_active_true_for_a_fresh_grant(self):
+        grant = BreakGlassGrantFactory()
+        assert grant.is_active() is True
+
+    def test_is_active_false_once_expired(self):
+        grant = BreakGlassGrantFactory(expires_at=timezone.now() - timedelta(minutes=1))
+        assert grant.is_active() is False
+
+    def test_is_active_false_once_revoked(self):
+        grant = BreakGlassGrantFactory(revoked_at=timezone.now())
+        assert grant.is_active() is False
+
+    def test_grant_always_has_an_expiry(self):
+        grant = BreakGlassGrantFactory()
+        assert grant.expires_at is not None
+
+    def test_grant_records_who_issued_it(self):
+        granter = UserFactory()
+        grant = BreakGlassGrantFactory(granted_by=granter)
+        assert BreakGlassGrant.objects.get(pk=grant.pk).granted_by == granter

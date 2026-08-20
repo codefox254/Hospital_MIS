@@ -1,10 +1,12 @@
-"""
-Auth endpoints (POST /api/v1/auth/token/, /refresh/) and MFA/break-glass
-routes land in the auth/permission-engine milestone (Milestone 0, PR 2) — this
-file exists now so config.urls' `include("apps.accounts.urls")` is stable
-across that PR rather than being added as a new include later.
-"""
+from django.urls import path
+
+from apps.accounts.views import MFAActivateView, MFASetupView, TokenObtainPairView, TokenRefreshView
 
 app_name = "accounts"
 
-urlpatterns = []
+urlpatterns = [
+    path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("mfa/setup/", MFASetupView.as_view(), name="mfa_setup"),
+    path("mfa/activate/", MFAActivateView.as_view(), name="mfa_activate"),
+]

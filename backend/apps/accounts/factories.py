@@ -1,8 +1,11 @@
 """Shared factory_boy factories for accounts models — synthetic data only."""
 
-import factory
+from datetime import timedelta
 
-from apps.accounts.models import Permission, Role, RolePermission, User, UserRole
+import factory
+from django.utils import timezone
+
+from apps.accounts.models import BreakGlassGrant, Permission, Role, RolePermission, User, UserRole
 from apps.core.factories import FacilityFactory
 
 
@@ -52,3 +55,15 @@ class UserRoleFactory(factory.django.DjangoModelFactory):
 
     user = factory.SubFactory(UserFactory)
     role = factory.SubFactory(RoleFactory)
+
+
+class BreakGlassGrantFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = BreakGlassGrant
+
+    user = factory.SubFactory(UserFactory)
+    permission = factory.SubFactory(PermissionFactory)
+    facility = factory.SubFactory(FacilityFactory)
+    reason = "Emergency access — synthetic test grant."
+    granted_by = factory.SubFactory(UserFactory)
+    expires_at = factory.LazyFunction(lambda: timezone.now() + timedelta(hours=4))

@@ -17,6 +17,7 @@ duplicated as a second field.
 from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
+from django.utils import timezone
 
 from apps.core.models import Department, Facility, TimeStampedModel, UUIDModel
 
@@ -174,3 +175,45 @@ class UserRole(UUIDModel, TimeStampedModel):
 
     def __str__(self):
         return f"{self.user} — {self.role}"
+
+
+class BreakGlassGrant(UUIDModel, TimeStampedModel):
+    """
+    Emergency access (TRD §4.3, BRD §7.3): a single permission, at a single
+    facility, for a mandatory reason, that always expires — never a standing
+    grant. Distinct from UserRole so it can never be mistaken for routine
+    access in a permission review. Self-documenting as an append-only record
+    (who granted it, to whom, why, when it expires); the audit milestone
+    additionally mirrors every grant/use into the central audit trail.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="break_glass_grants"
+    )
+    permission = models.ForeignKey(
+        Permission, on_delete=models.PROTECT, related_name="break_glass_grants"
+    )
+    facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name="+")
+    reason = models.TextField()
+    granted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="break_glass_grants_issued",
+    )
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(reason=""),
+                name="break_glass_reason_required",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user} — {self.permission} @ {self.facility} (expires {self.expires_at})"
+
+    def is_active(self):
+        return self.revoked_at is None and self.expires_at > timezone.now()
