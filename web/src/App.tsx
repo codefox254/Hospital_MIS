@@ -8,6 +8,9 @@ import { AppointmentsListPage } from "./pages/appointments/AppointmentsListPage"
 import { BookAppointmentPage } from "./pages/appointments/BookAppointmentPage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
+import { CreateLabOrderPage } from "./pages/laboratory/CreateLabOrderPage";
+import { LabOrderDetailPage } from "./pages/laboratory/LabOrderDetailPage";
+import { LabOrdersListPage } from "./pages/laboratory/LabOrdersListPage";
 import { ConsultationWorkspace } from "./pages/opd/ConsultationWorkspace";
 import { StartVisitPage } from "./pages/opd/StartVisitPage";
 import { VisitsListPage } from "./pages/opd/VisitsListPage";
@@ -94,6 +97,31 @@ export default function App() {
               element={
                 <RequirePermission code="opd.visit.view">
                   <ConsultationWorkspace />
+                </RequirePermission>
+              }
+            />
+
+            <Route
+              path="/laboratory"
+              element={
+                <RequirePermission code="laboratory.lab_order.view">
+                  <LabOrdersListPage />
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="/laboratory/new"
+              element={
+                <RequirePermission code="laboratory.lab_order.create">
+                  <CreateLabOrderPage />
+                </RequirePermission>
+              }
+            />
+            <Route
+              path="/laboratory/:id"
+              element={
+                <RequirePermission code="laboratory.lab_order.view">
+                  <LabOrderDetailPage />
                 </RequirePermission>
               }
             />

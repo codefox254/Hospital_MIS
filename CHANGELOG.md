@@ -99,10 +99,19 @@ All notable changes to this project are documented in this file.
   saved a full clinical note, added a diagnosis, locked the
   consultation, confirmed the locked fields render disabled, and added
   a real addendum afterward — zero console errors throughout.
-- Remaining for Milestone 7: Laboratory, Pharmacy, and Billing module
-  screens (same vertical-slice pattern), and the shared design-system
-  extraction the TRD calls for once enough screens exist to know what's
-  actually shared.
+- Laboratory module: order list, an "Order tests" form (reachable
+  standalone or, more naturally, via a new "Order labs" link on the OPD
+  consultation workspace that presets the current visit), and an order
+  detail page driving the full per-test lifecycle — collect sample,
+  enter result, verify. Verified end-to-end live: ordered two tests
+  against a real visit from inside the consultation workspace,
+  collected both samples, entered both results, watched the order's own
+  status move pending → processing as a pure consequence of those
+  actions (no status field the UI sets directly) — zero console errors.
+- Remaining for Milestone 7: Pharmacy and Billing module screens (same
+  vertical-slice pattern), and the shared design-system extraction the
+  TRD calls for once enough screens exist to know what's actually
+  shared.
 
 ### Added
 - Repository scaffolding: monorepo layout, `.gitignore`, root `README.md`,

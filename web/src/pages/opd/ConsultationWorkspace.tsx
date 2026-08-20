@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import { apiErrorMessage } from "../../lib/api";
 import { useAuthStore } from "../../lib/auth-store";
@@ -46,7 +46,14 @@ export function ConsultationWorkspace() {
     <div className="consultation-workspace">
       <div className="page-header">
         <h1>Consultation</h1>
-        <span className={`status-pill status-${visit.status}`}>{visit.status}</span>
+        <div>
+          <span className={`status-pill status-${visit.status}`}>{visit.status}</span>
+          {hasPermission("laboratory.lab_order.create") && (
+            <Link to={`/laboratory/new?visit=${visit.id}`} className="button-primary inline-link">
+              Order labs
+            </Link>
+          )}
+        </div>
       </div>
 
       <VitalsSection
