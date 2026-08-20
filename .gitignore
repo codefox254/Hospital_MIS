@@ -18,6 +18,10 @@ db.sqlite3-journal
 media/
 staticfiles/
 
+# Celery
+celerybeat-schedule*
+celerybeat.pid
+
 # Env / secrets
 .env
 .env.*
