@@ -9,7 +9,7 @@ privileged, not-yet-MFA-enabled account (see serializers.py).
 from django.contrib.auth import authenticate
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
@@ -18,6 +18,7 @@ from rest_framework_simplejwt.views import TokenRefreshView as BaseTokenRefreshV
 
 from apps.accounts import mfa
 from apps.accounts.serializers import ClientAwareTokenObtainPairSerializer
+from apps.accounts.services import get_effective_permission_codes
 
 
 class TokenObtainPairView(BaseTokenObtainPairView):
@@ -106,3 +107,37 @@ class MFAActivateView(APIView):
         user.mfa_enabled = True
         user.save(update_fields=["mfa_enabled"])
         return Response({"mfa_enabled": True}, status=status.HTTP_200_OK)
+
+
+class MeView(APIView):
+    """
+    GET /api/v1/auth/me/ — not in the original TRD/Data Dictionary
+    endpoint list, but the web console (TRD §5.1) needs it: route guards
+    have to check permissions *before* rendering, which means the
+    frontend needs to know its own effective permission set on load.
+    Nothing here is a new authorization decision — it just exposes what
+    apps.accounts.services.get_effective_permission_codes() (the same
+    function HasModulePermission itself calls on every request) already
+    computes server-side, so the client's route-gating and the server's
+    actual enforcement can never drift out of sync.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response(
+            {
+                "id": str(user.id),
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "facility": {
+                    "id": str(user.facility_id),
+                    "name": user.facility.name,
+                    "code": user.facility.code,
+                },
+                "mfa_enabled": user.mfa_enabled,
+                "permissions": sorted(get_effective_permission_codes(user)),
+            }
+        )

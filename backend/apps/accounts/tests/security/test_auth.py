@@ -126,6 +126,40 @@ class TestLoginPositiveCases:
         assert "access" in response.data
 
 
+class TestMeView:
+    def test_unauthenticated_cannot_fetch_the_current_user(self, client):
+        response = client.get(reverse("accounts:me"))
+        assert response.status_code == 401
+
+    @pytest.mark.smoke
+    def test_authenticated_user_gets_their_own_profile_and_permissions(self, client):
+        from apps.accounts.factories import RoleFactory, RolePermissionFactory, UserRoleFactory
+        from apps.accounts.models import Permission
+
+        user = UserFactory(email="staff@fdo-hospital.test", password=RAW_PASSWORD)
+        role = RoleFactory()
+        permission, _ = Permission.objects.get_or_create(code="patients.patient.view")
+        RolePermissionFactory(role=role, permission=permission)
+        UserRoleFactory(user=user, role=role, facility=None)
+
+        client.force_authenticate(user=user)
+        response = client.get(reverse("accounts:me"))
+
+        assert response.status_code == 200
+        assert response.data["email"] == "staff@fdo-hospital.test"
+        assert response.data["facility"]["id"] == str(user.facility_id)
+        assert "patients.patient.view" in response.data["permissions"]
+
+    def test_a_different_users_token_never_returns_someone_elses_profile(self, client):
+        UserFactory(email="a@fdo-hospital.test", password=RAW_PASSWORD)
+        b = UserFactory(email="b@fdo-hospital.test", password=RAW_PASSWORD)
+
+        client.force_authenticate(user=b)
+        response = client.get(reverse("accounts:me"))
+
+        assert response.data["email"] == "b@fdo-hospital.test"
+
+
 class TestAuthThrottling:
     def test_repeated_failed_logins_are_throttled(self, client):
         UserFactory(email="staff@fdo-hospital.test", password=RAW_PASSWORD)
