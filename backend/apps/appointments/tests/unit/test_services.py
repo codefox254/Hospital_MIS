@@ -71,7 +71,10 @@ class TestGetAvailableSlots:
         target_date = _next_monday()
         booked_at = timezone.make_aware(datetime.datetime.combine(target_date, datetime.time(9, 0)))
         AppointmentFactory(
-            doctor=doctor, department=department, facility=department.facility, scheduled_at=booked_at
+            doctor=doctor,
+            department=department,
+            facility=department.facility,
+            scheduled_at=booked_at,
         )
 
         slots = get_available_slots(doctor=doctor, department=department, date=target_date)
@@ -92,7 +95,10 @@ class TestGetAvailableSlots:
         target_date = _next_monday()
         booked_at = timezone.make_aware(datetime.datetime.combine(target_date, datetime.time(9, 0)))
         appointment = AppointmentFactory(
-            doctor=doctor, department=department, facility=department.facility, scheduled_at=booked_at
+            doctor=doctor,
+            department=department,
+            facility=department.facility,
+            scheduled_at=booked_at,
         )
         appointment.status = Appointment.Status.CANCELLED
         appointment.save()
@@ -136,9 +142,7 @@ class TestBookAppointment:
         doctor = UserFactory(facility=department.facility)
         patient = PatientFactory(facility=department.facility)
 
-        with patch(
-            "apps.appointments.tasks.schedule_appointment_reminder.delay"
-        ) as mock_delay:
+        with patch("apps.appointments.tasks.schedule_appointment_reminder.delay") as mock_delay:
             appointment = book_appointment(
                 facility=department.facility,
                 patient=patient,

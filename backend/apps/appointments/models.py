@@ -79,9 +79,7 @@ class Appointment(FacilityScopedModel, AuditableModel):
     )
     scheduled_at = models.DateTimeField()
     duration_minutes = models.SmallIntegerField()
-    status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.SCHEDULED
-    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)
     booking_channel = models.CharField(max_length=20, choices=BookingChannel.choices)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -155,9 +153,7 @@ class AppointmentReminder(UUIDModel):
         SENT = "sent", "Sent"
         FAILED = "failed", "Failed"
 
-    appointment = models.ForeignKey(
-        Appointment, on_delete=models.CASCADE, related_name="reminders"
-    )
+    appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name="reminders")
     channel = models.CharField(max_length=20, choices=Channel.choices)
     scheduled_at = models.DateTimeField()
     sent_at = models.DateTimeField(null=True, blank=True)

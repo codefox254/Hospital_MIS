@@ -87,7 +87,9 @@ class TestAppointmentPermissionBoundary:
 
     def test_double_booking_via_api_returns_400_not_500(self, client):
         facility = FacilityFactory()
-        existing = AppointmentFactory(facility=facility, department=DepartmentFactory(facility=facility))
+        existing = AppointmentFactory(
+            facility=facility, department=DepartmentFactory(facility=facility)
+        )
         patient = PatientFactory(facility=facility)
         user = _user_with_permissions(facility, "appointments.appointment.create")
         client.force_authenticate(user=user)
@@ -114,9 +116,7 @@ class TestAppointmentPermissionBoundary:
         user = _user_with_permissions(facility, "appointments.appointment.view")
         client.force_authenticate(user=user)
 
-        response = client.post(
-            reverse("appointments:appointment-check-in", args=[appointment.pk])
-        )
+        response = client.post(reverse("appointments:appointment-check-in", args=[appointment.pk]))
         assert response.status_code == 403
 
     def test_user_with_check_in_permission_can_check_in(self, client):
@@ -127,9 +127,7 @@ class TestAppointmentPermissionBoundary:
         user = _user_with_permissions(facility, "appointments.appointment.check_in")
         client.force_authenticate(user=user)
 
-        response = client.post(
-            reverse("appointments:appointment-check-in", args=[appointment.pk])
-        )
+        response = client.post(reverse("appointments:appointment-check-in", args=[appointment.pk]))
         assert response.status_code == 200
         assert response.data["queue_number"] == 1
 

@@ -34,9 +34,7 @@ class TestDoctorSchedule:
         from apps.audit.models import AuditLogEntry
 
         schedule = DoctorScheduleFactory()
-        entry = AuditLogEntry.objects.get(
-            record_id=schedule.pk, action=AuditLogEntry.Action.CREATE
-        )
+        entry = AuditLogEntry.objects.get(record_id=schedule.pk, action=AuditLogEntry.Action.CREATE)
         assert entry.facility_id == schedule.department.facility_id
 
 

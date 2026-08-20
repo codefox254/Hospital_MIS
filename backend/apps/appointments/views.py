@@ -136,9 +136,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         from apps.accounts.models import User
         from apps.patients.models import Patient
 
-        patient = get_object_or_404(
-            Patient, pk=data["patient"], facility=request.user.facility
-        )
+        patient = get_object_or_404(Patient, pk=data["patient"], facility=request.user.facility)
         doctor = get_object_or_404(User, pk=data["doctor"], facility=request.user.facility)
         department = get_object_or_404(
             Department, pk=data["department"], facility=request.user.facility
@@ -226,6 +224,4 @@ class AppointmentReminderViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return AppointmentReminder.objects.none()
-        return AppointmentReminder.objects.filter(
-            appointment__facility=self.request.user.facility
-        )
+        return AppointmentReminder.objects.filter(appointment__facility=self.request.user.facility)
