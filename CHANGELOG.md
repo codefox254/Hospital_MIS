@@ -33,6 +33,17 @@ All notable changes to this project are documented in this file.
   vulnerability scan, SAST, secrets scan, and a Docker build check that
   fails if secrets or the dev virtualenv end up baked into the image.
 - Pre-commit hooks mirroring the same lint/format/security gates locally.
+- Celery application bootstrap (`config/celery.py`) and a trivial
+  `apps.core.tasks.ping` task proving the Celery/Redis wiring works
+  end-to-end.
+- `patients` app (Milestone 1): `Patient` model with server-generated MRNs
+  (`register_patient()`, never client-supplied), full CRUD + search API
+  scoped to the requester's facility, and a separately permission-gated
+  `deactivate` action (soft delete) instead of DELETE — hard delete stays
+  disabled via `AuditableModel`. `HasModulePermission` gained
+  `permission_codes_by_action` so a ViewSet's custom actions (like
+  `deactivate`) can require a different permission than `create` even
+  though both are POST.
 
 ### Fixed
 - The standard error envelope was reading an exception's *class* default
@@ -43,3 +54,13 @@ All notable changes to this project are documented in this file.
   `.venv` into the built Docker image.
 - `drf-spectacular` schema generation crashed on the audit API because
   `get_queryset()` assumed an authenticated user during introspection.
+- `docker-compose.yml` referenced a Celery app module that didn't exist yet
+  (`celery -A config`) — both Celery containers were crash-looping since
+  Milestone 0's first commit.
+- `HasModulePermission` crashed with an uncaught 500 (instead of a clean
+  405) on any HTTP method a view deliberately doesn't implement, since DRF
+  checks permissions before checking whether the method is even handled.
+- A serializer-level bug where `serializer.save(actor=..., ip_address=...)`
+  would have silently discarded the audit actor/IP on every `PATCH`/`PUT`
+  by smuggling them into `validated_data` instead of `AuditableModel.save()`'s
+  real parameters — caught before merging, not after.

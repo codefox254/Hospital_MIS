@@ -32,6 +32,19 @@ class DummyMultiMethodView:
     permission_codes_by_method = {"GET": "lab.result.view", "POST": "lab.result.enter"}
 
 
+class DummyActionView:
+    """Simulates a ViewSet with a custom action sharing an HTTP method with
+    a standard one — `create` and `deactivate` are both POST."""
+
+    permission_codes_by_action = {
+        "create": "patients.patient.create",
+        "deactivate": "patients.patient.deactivate",
+    }
+
+    def __init__(self, action):
+        self.action = action
+
+
 def _request_as(user, facility=None, department=None, method="GET"):
     django_request = getattr(factory, method.lower())("/dummy/")
     request = Request(django_request)
@@ -83,10 +96,28 @@ class TestHasModulePermissionDenies:
         user = UserFactory()
 
         class MisconfiguredView:
-            pass
+            http_method_names = ["get"]
 
         with pytest.raises(ImproperlyConfigured):
             HasModulePermission().has_permission(_request_as(user), MisconfiguredView())
+
+    def test_unsupported_http_method_defers_to_405_instead_of_crashing(self):
+        """
+        Regression test: a ViewSet that deliberately excludes DELETE (e.g.
+        an audited model with hard delete disabled, TRD §8.4) has no action
+        mapped for it. DRF runs permission checks before it checks whether
+        the method is even implemented, so this used to raise
+        ImproperlyConfigured as an uncaught 500 instead of a clean 405.
+        """
+        user = UserFactory()
+
+        class NoDeleteView:
+            http_method_names = ["get", "post", "head", "options"]
+            action = None
+            permission_codes_by_action = {"list": "lab.result.view"}
+
+        request = _request_as(user, method="DELETE")
+        assert HasModulePermission().has_permission(request, NoDeleteView()) is True
 
 
 class TestHasModulePermissionAllows:
@@ -116,3 +147,16 @@ class TestHasModulePermissionAllows:
 
         request = _request_as(user, method="GET")  # role only has .enter, not .view
         assert HasModulePermission().has_permission(request, DummyMultiMethodView()) is False
+
+    def test_action_based_codes_distinguish_same_method_different_actions(self):
+        """A custom @action sharing POST with `create` must not be gated by
+        `create`'s permission code — this is the whole reason
+        permission_codes_by_action exists over permission_codes_by_method."""
+        user = UserFactory()
+        deactivate_permission = PermissionFactory(code="patients.patient.deactivate")
+        role_permission = RolePermissionFactory(permission=deactivate_permission)
+        UserRoleFactory(user=user, role=role_permission.role, facility=None)
+
+        request = _request_as(user, method="POST")
+        assert HasModulePermission().has_permission(request, DummyActionView("deactivate")) is True
+        assert HasModulePermission().has_permission(request, DummyActionView("create")) is False
