@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { RequireAuth, RequirePermission } from "./components/layout/RequireAuth";
 import { queryClient } from "./lib/queryClient";
+import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
 import { AppointmentsListPage } from "./pages/appointments/AppointmentsListPage";
 import { BookAppointmentPage } from "./pages/appointments/BookAppointmentPage";
 import { LoginPage } from "./pages/auth/LoginPage";
@@ -39,6 +40,15 @@ export default function App() {
             }
           >
             <Route path="/" element={<DashboardPage />} />
+
+            <Route
+              path="/admin"
+              element={
+                <RequirePermission code="accounts.user.create">
+                  <AdminDashboardPage />
+                </RequirePermission>
+              }
+            />
 
             <Route
               path="/patients"

@@ -6,6 +6,16 @@
   --text: #1a1f29;
   --text-muted: #6b7280;
   --danger: #d92d20;
+  --success-bg: #dcfce7;
+  --success-fg: #15803d;
+  --warning-bg: #fef3c7;
+  --warning-fg: #b45309;
+  --info-bg: #dbeafe;
+  --info-fg: #1d4ed8;
+  --neutral-bg: #f3f4f6;
+  --neutral-fg: #4b5563;
+  --danger-bg: #fee2e2;
+  --danger-fg: #b91c1c;
   font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: light;
 }
@@ -625,4 +635,233 @@ button {
   flex-direction: column;
   gap: 0.4rem;
   font-size: 0.9rem;
+}
+
+/* --- Modern cards (Milestone 7 modernization pass) --- */
+.modern-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  background: white;
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 3px rgba(15, 42, 74, 0.08), 0 1px 2px rgba(15, 42, 74, 0.04);
+  border: 1px solid var(--border);
+  transition: box-shadow 0.15s ease;
+}
+
+a.modern-card,
+.modern-card.clickable {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.modern-card.clickable:hover,
+a.modern-card:hover {
+  box-shadow: 0 4px 10px rgba(15, 42, 74, 0.12);
+}
+
+.icon-badge {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 12px;
+  background: #eef2f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.icon-badge.lg {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  font-size: 1.6rem;
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.card-title {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: 1rem;
+  margin: 0;
+}
+
+.card-subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0.15rem 0 0;
+}
+
+.card-meta {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 0.35rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.pill-success {
+  background: var(--success-bg);
+  color: var(--success-fg);
+}
+.pill-warning {
+  background: var(--warning-bg);
+  color: var(--warning-fg);
+}
+.pill-info {
+  background: var(--info-bg);
+  color: var(--info-fg);
+}
+.pill-neutral {
+  background: var(--neutral-bg);
+  color: var(--neutral-fg);
+}
+.pill-danger {
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--neutral-bg);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Stat cards / admin dashboard --- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.9rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.stat-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 1px 3px rgba(15, 42, 74, 0.06);
+}
+
+.stat-card .stat-label {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stat-card .stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--navy);
+  margin-top: 0.25rem;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 1.5rem 0 0.75rem;
+}
+
+.form-panel {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  max-width: 480px;
+}
+
+.form-panel h3 {
+  margin: 0 0 1rem;
+  color: var(--navy);
+  font-size: 1rem;
+}
+
+.form-panel label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0.75rem 0 0.3rem;
+}
+
+.form-panel input,
+.form-panel select {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.form-panel button {
+  margin-top: 1rem;
+}
+
+/* --- Payment method icons (Billing/Cashier) --- */
+.payment-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+}
+
+.payment-icon.mpesa {
+  background: #4caf50;
+}
+.payment-icon.cash {
+  background: #16a34a;
+}
+.payment-icon.card {
+  background: #1e3a8a;
+}
+.payment-icon.bank {
+  background: #334155;
+}
+.payment-icon.insurance {
+  background: #7c3aed;
 }

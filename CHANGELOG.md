@@ -4,6 +4,36 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added (web console — Admin dashboard, SaaS admin tiers)
+- `/admin` route + sidebar entry: role-aware, branching on whether the
+  signed-in user holds `core.facility.view` (Super Admin) — same
+  backend permission the API itself gates on, so the web UI can never
+  show an admin capability the server would then reject.
+- Super Admin view: cross-facility stat cards (facilities/patients/
+  staff/appointments-today, aggregated client-side from
+  `/core/platform-stats/`), a facility list with per-facility counts
+  and a deactivate action, a "create facility" form (onboard a new
+  hospital), and a "create facility admin" form (the new tenant's
+  first admin account, atomically granted the Administrator role
+  scoped to that facility).
+- Facility Admin view: a scoped-down "add a staff member" form — the
+  facility field is never shown or sent; the backend forces it to the
+  requester's own facility regardless.
+- New shared card/pill/badge/stat-card CSS classes in index.css
+  (`.modern-card`, `.icon-badge`, `.pill-*`, `.stat-card`, `.chip`,
+  `.payment-icon`) — the start of the modernization pass, reused by
+  the admin dashboard now and by every other module's list/detail
+  pages as that continues.
+
+Verified live end-to-end: logged in as Super Admin (MFA now required —
+Super Admin was added to the privileged-role list), created a real
+facility and a scoped facility-admin account through the UI, confirmed
+via the database that the new account's UserRole grant is scoped to
+the new facility (not unscoped, not the creator's facility), and
+confirmed the new account is itself correctly blocked from logging in
+until it completes its own MFA setup — the same requirement every
+Administrator-tier account has always had.
+
 ### Added (mobile — Milestone 8, in progress)
 - `mobile/`: FDO Health scaffolded on bare React Native + TypeScript
   (RN 0.87), per TRD §6 — bottom-tab navigation (Home, Appointments,

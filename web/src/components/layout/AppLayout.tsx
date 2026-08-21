@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { to: "/laboratory", label: "Laboratory", permission: "laboratory.lab_order.view" },
   { to: "/pharmacy", label: "Pharmacy", permission: "pharmacy.prescription.view" },
   { to: "/billing", label: "Billing", permission: "billing.invoice.view" },
+  { to: "/admin", label: "Admin", permission: "accounts.user.create" },
 ] as const;
 
 export function AppLayout() {
