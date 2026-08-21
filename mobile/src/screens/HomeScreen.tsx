@@ -39,6 +39,17 @@ export function HomeScreen() {
                 </Text>
               </View>
             </View>
+            <View style={styles.card}>
+              <View style={styles.iconBadge}>
+                <Text style={styles.iconGlyph}>{"\u{1F4B3}"}</Text>
+              </View>
+              <View style={styles.cardBody}>
+                <Text style={styles.cardTitle}>Billing</Text>
+                <Text style={styles.cardSubtitle}>
+                  View invoices, line items, and payment history in the Billing tab.
+                </Text>
+              </View>
+            </View>
           </>
         )}
       </ScrollView>

@@ -12,6 +12,16 @@ const PALETTE: Record<string, StatusStyle> = {
   pending: { bg: "#f3f4f6", fg: "#4b5563" },
   collected: { bg: "#e0e7ff", fg: "#4338ca" },
   processing: { bg: "#fef3c7", fg: "#b45309" },
+  received: { bg: "#e0e7ff", fg: "#4338ca" },
+  rejected: { bg: "#fee2e2", fg: "#b91c1c" },
+  entered: { bg: "#fef3c7", fg: "#b45309" },
+  verified: { bg: "#dcfce7", fg: "#15803d" },
+  amended: { bg: "#ffedd5", fg: "#c2410c" },
+  open: { bg: "#dbeafe", fg: "#1d4ed8" },
+  pending_confirmation: { bg: "#fef3c7", fg: "#b45309" },
+  paid: { bg: "#dcfce7", fg: "#15803d" },
+  partially_paid: { bg: "#ffedd5", fg: "#c2410c" },
+  written_off: { bg: "#f3f4f6", fg: "#4b5563" },
 };
 
 const DEFAULT_STATUS: StatusStyle = { bg: "#f3f4f6", fg: "#4b5563" };

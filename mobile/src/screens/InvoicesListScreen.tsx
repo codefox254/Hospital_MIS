@@ -6,20 +6,21 @@ import { useNavigation } from "@react-navigation/native";
 import { PlaceholderBanner } from "../components/PlaceholderBanner";
 import { api, apiErrorMessage } from "../lib/api";
 import { formatLabel, statusStyle } from "../lib/statusStyle";
-import type { Appointment, PaginatedResponse } from "../types/appointment";
-import type { AppointmentsStackParamList } from "../navigation/types";
+import type { Invoice } from "../types/billing";
+import type { PaginatedResponse } from "../types/appointment";
+import type { BillingStackParamList } from "../navigation/types";
 
-export function AppointmentsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<AppointmentsStackParamList>>();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+export function InvoicesListScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<BillingStackParamList>>();
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const { data } = await api.get<PaginatedResponse<Appointment>>("/appointments/appointments/");
-      setAppointments(data.results);
+      const { data } = await api.get<PaginatedResponse<Invoice>>("/billing/invoices/");
+      setInvoices(data.results);
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
@@ -36,42 +37,33 @@ export function AppointmentsScreen() {
       <PlaceholderBanner />
       <FlatList
         contentContainerStyle={styles.content}
-        data={appointments}
+        data={invoices}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={
-          !loading ? (
-            <Text style={styles.empty}>{error ?? "No appointments found."}</Text>
-          ) : undefined
+          !loading ? <Text style={styles.empty}>{error ?? "No invoices found."}</Text> : undefined
         }
         renderItem={({ item }) => {
           const pill = statusStyle(item.status);
-          const date = new Date(item.scheduled_at);
           return (
             <TouchableOpacity
               style={styles.card}
-              onPress={() => navigation.navigate("AppointmentDetail", { id: item.id })}
+              onPress={() => navigation.navigate("InvoiceDetail", { id: item.id })}
             >
               <View style={styles.iconBadge}>
-                <Text style={styles.iconGlyph}>{"\u{1F4C5}"}</Text>
+                <Text style={styles.iconGlyph}>{"\u{1F4B3}"}</Text>
               </View>
               <View style={styles.cardBody}>
                 <View style={styles.rowBetween}>
-                  <Text style={styles.dateMain}>
-                    {date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
-                  </Text>
+                  <Text style={styles.invoiceNumber}>{item.invoice_number}</Text>
                   <View style={[styles.pill, { backgroundColor: pill.bg }]}>
                     <Text style={[styles.pillText, { color: pill.fg }]}>
                       {formatLabel(item.status)}
                     </Text>
                   </View>
                 </View>
-                <Text style={styles.dateTime}>
-                  {date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
-                </Text>
-                <Text style={styles.meta}>
-                  {item.duration_minutes} min &middot; {formatLabel(item.booking_channel)}
-                </Text>
+                <Text style={styles.total}>Total {item.total}</Text>
+                <Text style={styles.balance}>Balance {item.balance}</Text>
               </View>
               <Text style={styles.chevron}>{"\u{1F441}"}</Text>
             </TouchableOpacity>
@@ -111,9 +103,9 @@ const styles = StyleSheet.create({
   iconGlyph: { fontSize: 20 },
   cardBody: { flex: 1 },
   rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  dateMain: { fontSize: 15, fontWeight: "700", color: "#111827" },
-  dateTime: { fontSize: 13, color: "#374151", marginTop: 2 },
-  meta: { fontSize: 12, color: "#9ca3af", marginTop: 6 },
+  invoiceNumber: { fontSize: 15, fontWeight: "700", color: "#111827" },
+  total: { fontSize: 13, color: "#374151", marginTop: 4 },
+  balance: { fontSize: 12, color: "#9ca3af", marginTop: 2 },
   pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   pillText: { fontSize: 11, fontWeight: "700", textTransform: "uppercase" },
   chevron: { fontSize: 16, marginLeft: 8, opacity: 0.5 },

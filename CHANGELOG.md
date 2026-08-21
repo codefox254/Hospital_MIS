@@ -4,6 +4,75 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added (mobile — Milestone 8, in progress)
+- `mobile/`: FDO Health scaffolded on bare React Native + TypeScript
+  (RN 0.87), per TRD §6 — bottom-tab navigation (Home, Appointments,
+  Lab Results, Billing, Profile), JWT auth mirroring the web console's
+  axios interceptor/refresh pattern (`client_type=mobile` for the 30-day
+  refresh lifetime the backend already branches on).
+- The backend has no patient identity/login yet — only staff accounts
+  with facility-scoped RBAC — so the app authenticates with a staff
+  account as an explicit, clearly-labeled stand-in (a persistent banner
+  on every data screen) rather than silently presenting the finished
+  patient experience. Real patient auth is follow-up work, not started.
+- Detail ("eye view") screens for Appointments and Lab Orders, reached
+  via nested stack navigators per tab: appointment detail resolves and
+  displays patient/doctor/department names (not just the raw IDs the
+  serializers return); lab order detail shows each ordered test's
+  status and, once entered, its result values (parameter/value/unit/
+  reference range, flagged values highlighted) — this is the "what's
+  queued for the lab" view. A Billing tab (invoice list → detail with
+  line items and payment history) rounds out read access to the same
+  data the web console's Billing module manages.
+- A real bug found and fixed live: the shared name-lookup hook
+  (`useLookups`) initialized its `ready` flag from whatever the *first*
+  render's arguments were — on a detail screen, that first render always
+  has no patient id yet (the appointment itself hasn't loaded), so
+  `ready` latched `true` before the real patient fetch had even started.
+  The result: detail screens rendered immediately with an unresolved
+  patient name (blank dash) instead of waiting. Fixed by resetting
+  `ready` to `false` at the start of every effect run, not just once.
+- UI pass: tab bar icons (previously blank/broken glyphs — no
+  `react-native-vector-icons` was linked, and adding one meant another
+  full native rebuild cycle) now use styled emoji, which needs no native
+  module at all. Appointments/Lab Results/Billing/Home/Profile cards
+  redesigned with status-color pills, icon badges, and shadowed cards
+  for a consistent look across screens.
+- The app icon (a new brand asset, `docs/brand/icon.png`) is now wired
+  through everywhere an icon is needed: Android launcher icons at every
+  density, the iOS AppIcon set, and the web console's favicon/apple-touch-icon.
+
+### Added (backend — RBAC seed & Django admin branding)
+- Every `ViewSet` was already permission-gated via
+  `permission_codes_by_action` — that part of "roles mapped to views"
+  was already true. What was missing: no environment had a *committed*
+  seed of the actual Role/Permission rows: `HasModulePermission` was
+  fully wired but a fresh `migrate` left the database with zero
+  permissions and zero roles to grant, so nothing beyond a superuser
+  bypass could do anything until someone ran an ad-hoc, uncommitted
+  shell script (which is all that ever populated any environment so
+  far, this one included). `python manage.py seed_rbac` fixes that: an
+  idempotent command seeding the full 58-code permission catalogue
+  (generated from grep'ing every `permission_codes_by_action` in the
+  codebase, not hand-typed) and 13 canonical roles — Receptionist,
+  Doctor, Nurse, Lab Technician, Lab Scientist, Pharmacist, Cashier,
+  Billing Officer, and Administrator map directly to the modules they
+  work in; the four privileged roles TRD §3.3 names (Finance Manager,
+  IT Administrator, Medical Director, Insurance Officer) have no BRD to
+  define their scope precisely, so their grants are documented as
+  best-effort defaults pending the real BRD role matrix, not a
+  confirmed spec. Run again after adding a new permission code and it
+  picks it up. 4 new tests.
+- Django admin was still the unbranded default ("Django administration").
+  Now: a custom `admin/base_site.html` with the new app icon as both
+  favicon and header logo, `site_header`/`site_title`/`index_title` set
+  to FDO Hospital MIS, `django.contrib.auth`'s unused `Group` model
+  unregistered (it played no role in permission checks — `HasModulePermission`
+  never looks at it — and left as a second, confusing, decoy place to
+  try to grant access from), and inline Role↔Permission /
+  User↔Role editing so mapping a user to a role, or a role to its
+  permissions, no longer means navigating to a separate list screen.
+
 ### Added (web console — Milestone 7, in progress)
 - `web/`: React 19 + TypeScript SPA scaffolded with Vite, per TRD §5.1's
   stack — React Router (permission-gated route guards), TanStack Query

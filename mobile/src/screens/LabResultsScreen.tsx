@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
 
 import { PlaceholderBanner } from "../components/PlaceholderBanner";
 import { api, apiErrorMessage } from "../lib/api";
 import { formatLabel, priorityStyle, statusStyle } from "../lib/statusStyle";
 import type { LabOrder, PaginatedResponse } from "../types/appointment";
+import type { LabResultsStackParamList } from "../navigation/types";
 
 export function LabResultsScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<LabResultsStackParamList>>();
   const [orders, setOrders] = useState<LabOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +48,10 @@ export function LabResultsScreen() {
           const status = statusStyle(item.status);
           const priority = priorityStyle(item.priority);
           return (
-            <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => navigation.navigate("LabOrderDetail", { id: item.id })}
+            >
               <View style={styles.header}>
                 <View style={styles.iconBadge}>
                   <Text style={styles.iconGlyph}>{"\u{1F9EA}"}</Text>
@@ -77,6 +84,7 @@ export function LabResultsScreen() {
                     </Text>
                   </View>
                 </View>
+                <Text style={styles.chevron}>{"\u{1F441}"}</Text>
               </View>
               <View style={styles.testRow}>
                 {item.items.map((test) => (
@@ -85,7 +93,7 @@ export function LabResultsScreen() {
                   </View>
                 ))}
               </View>
-            </View>
+            </TouchableOpacity>
           );
         }}
       />
@@ -125,6 +133,7 @@ const styles = StyleSheet.create({
   pillGroup: { flexDirection: "row", gap: 6 },
   pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   pillText: { fontSize: 11, fontWeight: "700", textTransform: "uppercase" },
+  chevron: { fontSize: 16, marginLeft: 8, opacity: 0.5 },
   testRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
   testChip: {
     backgroundColor: "#f3f4f6",
