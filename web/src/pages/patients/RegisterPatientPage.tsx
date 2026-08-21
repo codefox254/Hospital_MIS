@@ -1,10 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { apiErrorMessage } from "../../lib/api";
-import { useRegisterPatient } from "./hooks";
+import { usePatients, useRegisterPatient } from "./hooks";
 
 const schema = z.object({
   first_name: z.string().min(1, "First name is required."),
@@ -20,17 +21,63 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+/** Reception's job is to find out whether this patient already has a
+ * record here before creating a second one — a duplicate MRN for the
+ * same person means their history (allergies, past visits, results)
+ * splits across two records. This searches by whatever's been typed so
+ * far (name, phone, national ID all hit the same backend search_fields)
+ * and surfaces matches before the blank form is even filled in. */
+function DuplicateCheck({ query }: { query: string }) {
+  const { data, isFetching } = usePatients(query);
+  const matches = data?.results ?? [];
+
+  if (query.trim().length < 2) return null;
+
+  return (
+    <div className="form-panel" style={{ marginBottom: "1.25rem" }}>
+      <h3>Existing patients matching &ldquo;{query}&rdquo;</h3>
+      {isFetching && <p className="card-subtitle">Searching…</p>}
+      {!isFetching && matches.length === 0 && (
+        <p className="card-subtitle">No existing record found — safe to register as new.</p>
+      )}
+      {matches.length > 0 && (
+        <div className="card-list">
+          {matches.map((p) => (
+            <Link key={p.id} to={`/patients/${p.id}`} className="modern-card clickable">
+              <div className="icon-badge">👤</div>
+              <div className="card-body">
+                <p className="card-title">
+                  {p.first_name} {p.last_name}
+                </p>
+                <p className="card-meta">
+                  {p.mrn} · {p.phone || "no phone"} · DOB {p.date_of_birth}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function RegisterPatientPage() {
   const navigate = useNavigate();
   const register_ = useRegisterPatient();
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { gender: "unspecified" },
   });
+
+  const [checkQuery, setCheckQuery] = useState("");
+  const firstName = watch("first_name");
+  const lastName = watch("last_name");
+  const phone = watch("phone");
 
   async function onSubmit(values: FormValues) {
     try {
@@ -44,16 +91,27 @@ export function RegisterPatientPage() {
   return (
     <div>
       <h1>Register patient</h1>
+
+      <DuplicateCheck query={checkQuery} />
+
       <form className="form-grid" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div>
           <label htmlFor="first_name">First name</label>
-          <input id="first_name" {...register("first_name")} />
+          <input
+            id="first_name"
+            {...register("first_name")}
+            onBlur={() => setCheckQuery(phone || `${firstName ?? ""} ${lastName ?? ""}`.trim())}
+          />
           {errors.first_name && <p className="field-error">{errors.first_name.message}</p>}
         </div>
 
         <div>
           <label htmlFor="last_name">Last name</label>
-          <input id="last_name" {...register("last_name")} />
+          <input
+            id="last_name"
+            {...register("last_name")}
+            onBlur={() => setCheckQuery(phone || `${firstName ?? ""} ${lastName ?? ""}`.trim())}
+          />
           {errors.last_name && <p className="field-error">{errors.last_name.message}</p>}
         </div>
 
@@ -80,7 +138,11 @@ export function RegisterPatientPage() {
 
         <div>
           <label htmlFor="phone">Phone</label>
-          <input id="phone" {...register("phone")} />
+          <input
+            id="phone"
+            {...register("phone")}
+            onBlur={() => setCheckQuery(phone || `${firstName ?? ""} ${lastName ?? ""}`.trim())}
+          />
         </div>
 
         <div>
@@ -103,7 +165,7 @@ export function RegisterPatientPage() {
           <p className="form-error">{apiErrorMessage(register_.error)}</p>
         )}
 
-        <button type="submit" disabled={isSubmitting}>
+        <button type="submit" disabled={isSubmitting} className="button-primary">
           {isSubmitting ? "Registering…" : "Register patient"}
         </button>
       </form>
