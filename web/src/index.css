@@ -865,3 +865,131 @@ a.modern-card:hover {
 .payment-icon.insurance {
   background: #7c3aed;
 }
+
+/* --- Invoice header / cashier view --- */
+.invoice-header-card {
+  background: var(--navy);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+  color: white;
+}
+
+.invoice-header-card .card-row {
+  align-items: flex-start;
+}
+
+.invoice-number {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.invoice-patient {
+  color: #c7d3e3;
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+}
+
+.invoice-totals-row {
+  display: flex;
+  gap: 2.5rem;
+  margin-top: 1.25rem;
+}
+
+.invoice-totals-label {
+  display: block;
+  color: #c7d3e3;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.invoice-totals-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-top: 0.15rem;
+}
+
+.payment-rail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+  max-width: 480px;
+}
+
+.payment-rail-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.payment-rail-tile.selected {
+  border-color: var(--accent);
+  background: #eff4ff;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* --- Receipt --- */
+.receipt-paper {
+  background: white;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  max-width: 380px;
+  font-family: "Courier New", monospace;
+}
+
+.receipt-brand {
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+}
+
+.receipt-meta {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0.1rem 0;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding: 0.2rem 0;
+}
+
+.receipt-total {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #receipt-printable,
+  #receipt-printable * {
+    visibility: visible;
+  }
+  #receipt-printable {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border: none;
+  }
+}

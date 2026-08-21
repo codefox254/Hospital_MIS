@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 import { useAuthStore } from "../../lib/auth-store";
+import { formatStatusLabel, pillClass } from "../../lib/statusPill";
 import { useLabOrders } from "./hooks";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -28,39 +29,36 @@ export function LabOrdersListPage() {
       {isLoading && <p>Loading…</p>}
 
       {data && (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Ordered</th>
-              <th>Priority</th>
-              <th>Status</th>
-              <th>Tests</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.results.length === 0 && (
-              <tr>
-                <td colSpan={5}>No lab orders found.</td>
-              </tr>
-            )}
-            {data.results.map((order) => (
-              <tr key={order.id}>
-                <td>{new Date(order.ordered_at).toLocaleString()}</td>
-                <td>{order.priority}</td>
-                <td>
-                  <span className={`status-pill status-${order.status}`}>
-                    {STATUS_LABELS[order.status]}
-                  </span>
-                </td>
-                <td>{order.items.map((i) => i.test_code).join(", ")}</td>
-                <td>
-                  <Link to={`/laboratory/${order.id}`}>Open</Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="card-list">
+          {data.results.length === 0 && <p className="card-subtitle">No lab orders found.</p>}
+          {data.results.map((order) => (
+            <Link key={order.id} to={`/laboratory/${order.id}`} className="modern-card clickable">
+              <div className="icon-badge">🧪</div>
+              <div className="card-body">
+                <div className="card-row">
+                  <p className="card-title">{new Date(order.ordered_at).toLocaleString()}</p>
+                  <div style={{ display: "flex", gap: "0.4rem" }}>
+                    {order.priority !== "routine" && (
+                      <span className={pillClass(order.priority)}>
+                        {formatStatusLabel(order.priority)}
+                      </span>
+                    )}
+                    <span className={pillClass(order.status)}>
+                      {STATUS_LABELS[order.status] ?? formatStatusLabel(order.status)}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.5rem" }}>
+                  {order.items.map((i) => (
+                    <span key={i.id} className="chip">
+                      {i.test_name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       )}
     </div>
   );

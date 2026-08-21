@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuthStore } from "../../lib/auth-store";
-import { useDepartments } from "../../lib/useLookups";
+import { useDepartments, usePatientName, useStaffUsers, staffName } from "../../lib/useLookups";
+import { formatStatusLabel, pillClass } from "../../lib/statusPill";
+import type { Appointment } from "../../types/appointment";
 import {
   useAppointments,
   useCallNext,
@@ -21,6 +23,61 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: "Cancelled",
 };
 
+function AppointmentCard({
+  appt,
+  doctorName,
+  departmentName,
+  canCheckIn,
+  canCancel,
+  onCheckIn,
+  onCancel,
+}: {
+  appt: Appointment;
+  doctorName: string;
+  departmentName: string;
+  canCheckIn: boolean;
+  canCancel: boolean;
+  onCheckIn: () => void;
+  onCancel: () => void;
+}) {
+  const { data: patientName } = usePatientName(appt.patient);
+  const date = new Date(appt.scheduled_at);
+
+  return (
+    <div className="modern-card">
+      <div className="icon-badge">📅</div>
+      <div className="card-body">
+        <div className="card-row">
+          <p className="card-title">
+            {date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}{" "}
+            &middot; {date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+          </p>
+          <span className={pillClass(appt.status)}>
+            {STATUS_LABELS[appt.status] ?? formatStatusLabel(appt.status)}
+          </span>
+        </div>
+        <p className="card-subtitle">{patientName ?? "…"}</p>
+        <p className="card-meta">
+          {doctorName} · {departmentName} · {appt.duration_minutes} min ·{" "}
+          {formatStatusLabel(appt.booking_channel)}
+        </p>
+      </div>
+      <div className="row-actions">
+        {canCheckIn && appt.status === "scheduled" && (
+          <button type="button" onClick={onCheckIn}>
+            Check in
+          </button>
+        )}
+        {canCancel && !["cancelled", "completed", "no_show"].includes(appt.status) && (
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AppointmentsListPage() {
   const user = useAuthStore((s) => s.user);
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -28,6 +85,7 @@ export function AppointmentsListPage() {
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
 
   const { data: departments } = useDepartments();
+  const { data: staff } = useStaffUsers();
   const department = selectedDepartment || departments?.[0]?.id || "";
 
   const { data, isLoading } = useAppointments({ status: status || undefined });
@@ -41,6 +99,12 @@ export function AppointmentsListPage() {
   const canCheckIn = hasPermission("appointments.appointment.check_in");
   const canCancel = hasPermission("appointments.appointment.update");
   const canCall = hasPermission("appointments.queue.call");
+
+  const departmentName = (id: string) => departments?.find((d) => d.id === id)?.name ?? "—";
+  const doctorName = (id: string) => {
+    const u = staff?.find((s) => s.id === id);
+    return u ? staffName(u) : "—";
+  };
 
   return (
     <div className="appointments-layout">
@@ -68,47 +132,21 @@ export function AppointmentsListPage() {
         {isLoading && <p>Loading…</p>}
 
         {data && (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Status</th>
-                <th>Channel</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.results.length === 0 && (
-                <tr>
-                  <td colSpan={4}>No appointments found.</td>
-                </tr>
-              )}
-              {data.results.map((appt) => (
-                <tr key={appt.id}>
-                  <td>{new Date(appt.scheduled_at).toLocaleString()}</td>
-                  <td>
-                    <span className={`status-pill status-${appt.status}`}>
-                      {STATUS_LABELS[appt.status]}
-                    </span>
-                  </td>
-                  <td>{appt.booking_channel}</td>
-                  <td className="row-actions">
-                    {canCheckIn && appt.status === "scheduled" && (
-                      <button type="button" onClick={() => checkIn.mutate(appt.id)}>
-                        Check in
-                      </button>
-                    )}
-                    {canCancel &&
-                      !["cancelled", "completed", "no_show"].includes(appt.status) && (
-                        <button type="button" onClick={() => cancel.mutate(appt.id)}>
-                          Cancel
-                        </button>
-                      )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="card-list">
+            {data.results.length === 0 && <p className="card-subtitle">No appointments found.</p>}
+            {data.results.map((appt) => (
+              <AppointmentCard
+                key={appt.id}
+                appt={appt}
+                doctorName={doctorName(appt.doctor)}
+                departmentName={departmentName(appt.department)}
+                canCheckIn={canCheckIn}
+                canCancel={canCancel}
+                onCheckIn={() => checkIn.mutate(appt.id)}
+                onCancel={() => cancel.mutate(appt.id)}
+              />
+            ))}
+          </div>
         )}
       </div>
 
@@ -126,7 +164,17 @@ export function AppointmentsListPage() {
           {queue?.map((entry) => (
             <li key={entry.id} className={entry.called_at ? "queue-called" : ""}>
               <span className="queue-number">#{entry.queue_number}</span>
-              <span className={`priority-${entry.priority}`}>{entry.priority}</span>
+              <span
+                className={
+                  entry.priority === "emergency"
+                    ? "pill pill-danger"
+                    : entry.priority === "priority"
+                      ? "pill pill-warning"
+                      : "pill pill-neutral"
+                }
+              >
+                {entry.priority}
+              </span>
               {canCall && !entry.called_at && (
                 <button type="button" onClick={() => callNext.mutate(entry.id)}>
                   Call

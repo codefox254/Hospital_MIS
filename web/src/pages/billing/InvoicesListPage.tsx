@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
 
+import { usePatientName } from "../../lib/useLookups";
+import { formatStatusLabel, pillClass } from "../../lib/statusPill";
+import type { Invoice } from "../../types/billing";
 import { useInvoices } from "./hooks";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -9,6 +12,27 @@ const STATUS_LABELS: Record<string, string> = {
   partially_paid: "Partially Paid",
   written_off: "Written Off",
 };
+
+function InvoiceCard({ invoice }: { invoice: Invoice }) {
+  const { data: patientName } = usePatientName(invoice.patient);
+  return (
+    <Link to={`/billing/${invoice.id}`} className="modern-card clickable">
+      <div className="icon-badge">🧾</div>
+      <div className="card-body">
+        <div className="card-row">
+          <p className="card-title">{invoice.invoice_number}</p>
+          <span className={pillClass(invoice.status)}>
+            {STATUS_LABELS[invoice.status] ?? formatStatusLabel(invoice.status)}
+          </span>
+        </div>
+        <p className="card-subtitle">{patientName ?? "…"}</p>
+        <p className="card-meta">
+          Total {invoice.total} · Balance {invoice.balance}
+        </p>
+      </div>
+    </Link>
+  );
+}
 
 export function InvoicesListPage() {
   const { data, isLoading } = useInvoices();
@@ -22,39 +46,12 @@ export function InvoicesListPage() {
       {isLoading && <p>Loading…</p>}
 
       {data && (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Invoice #</th>
-              <th>Status</th>
-              <th>Total</th>
-              <th>Balance</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.results.length === 0 && (
-              <tr>
-                <td colSpan={5}>No invoices found.</td>
-              </tr>
-            )}
-            {data.results.map((invoice) => (
-              <tr key={invoice.id}>
-                <td>{invoice.invoice_number}</td>
-                <td>
-                  <span className={`status-pill status-${invoice.status}`}>
-                    {STATUS_LABELS[invoice.status]}
-                  </span>
-                </td>
-                <td>{invoice.total}</td>
-                <td>{invoice.balance}</td>
-                <td>
-                  <Link to={`/billing/${invoice.id}`}>Open</Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="card-list">
+          {data.results.length === 0 && <p className="card-subtitle">No invoices found.</p>}
+          {data.results.map((invoice) => (
+            <InvoiceCard key={invoice.id} invoice={invoice} />
+          ))}
+        </div>
       )}
     </div>
   );

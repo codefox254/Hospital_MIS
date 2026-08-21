@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 
 import { apiErrorMessage } from "../../lib/api";
 import { useAuthStore } from "../../lib/auth-store";
+import { usePatientName } from "../../lib/useLookups";
+import { formatStatusLabel, pillClass } from "../../lib/statusPill";
 import {
   useApproveRefund,
   useInvoice,
@@ -21,6 +23,21 @@ const STATUS_LABELS: Record<string, string> = {
   written_off: "Written Off",
 };
 
+const PAYMENT_RAILS: { method: PaymentMethod; label: string; icon: string; className: string }[] = [
+  { method: "cash", label: "Cash", icon: "💵", className: "cash" },
+  { method: "card", label: "Card", icon: "💳", className: "card" },
+  { method: "bank", label: "Bank", icon: "🏦", className: "bank" },
+  { method: "insurance", label: "Insurance", icon: "🛡️", className: "insurance" },
+];
+
+function paymentIconFor(method: string) {
+  if (method === "mpesa") return { icon: "📱", className: "mpesa", label: "M-Pesa" };
+  const rail = PAYMENT_RAILS.find((r) => r.method === method);
+  return rail
+    ? { icon: rail.icon, className: rail.className, label: rail.label }
+    : { icon: "💰", className: "cash", label: formatStatusLabel(method) };
+}
+
 export function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -28,6 +45,7 @@ export function InvoiceDetailPage() {
   const { data: invoice } = useInvoice(id);
   const { data: payments } = usePayments(id);
   const { data: refunds } = useRefunds(id);
+  const { data: patientName } = usePatientName(invoice?.patient);
 
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [amount, setAmount] = useState("");
@@ -47,68 +65,85 @@ export function InvoiceDetailPage() {
 
   return (
     <div className="consultation-workspace">
-      <div className="page-header">
-        <h1>{invoice.invoice_number}</h1>
-        <span className={`status-pill status-${invoice.status}`}>{STATUS_LABELS[invoice.status]}</span>
+      <div className="invoice-header-card">
+        <div className="card-row">
+          <div>
+            <p className="invoice-number">{invoice.invoice_number}</p>
+            <p className="invoice-patient">{patientName ?? "…"}</p>
+          </div>
+          <span className={pillClass(invoice.status)}>
+            {STATUS_LABELS[invoice.status] ?? formatStatusLabel(invoice.status)}
+          </span>
+        </div>
+        <div className="invoice-totals-row">
+          <div>
+            <span className="invoice-totals-label">Total</span>
+            <span className="invoice-totals-value">{invoice.total}</span>
+          </div>
+          <div>
+            <span className="invoice-totals-label">Balance</span>
+            <span className="invoice-totals-value">{invoice.balance}</span>
+          </div>
+        </div>
       </div>
 
       <section className="consult-section">
         <h2>Line items</h2>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Description</th>
-              <th>Module</th>
-              <th>Qty</th>
-              <th>Unit price</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoice.line_items.length === 0 && (
-              <tr>
-                <td colSpan={5}>No line items yet.</td>
-              </tr>
-            )}
-            {invoice.line_items.map((li) => (
-              <tr key={li.id}>
-                <td>{li.description}</td>
-                <td>{li.source_module}</td>
-                <td>{li.quantity}</td>
-                <td>{li.unit_price}</td>
-                <td>{li.amount}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="card-list">
+          {invoice.line_items.length === 0 && <p className="card-subtitle">No line items yet.</p>}
+          {invoice.line_items.map((li) => (
+            <div key={li.id} className="modern-card">
+              <div className="card-body">
+                <div className="card-row">
+                  <p className="card-title">{li.description}</p>
+                  <p className="card-title">{li.amount}</p>
+                </div>
+                <p className="card-meta">
+                  {formatStatusLabel(li.source_module)} · Qty {li.quantity} · @ {li.unit_price}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
         <p className="muted" style={{ marginTop: "0.75rem" }}>
-          Subtotal {invoice.subtotal} — Discount {invoice.discount} — Tax {invoice.tax} —{" "}
-          <strong>Total {invoice.total}</strong> — Balance <strong>{invoice.balance}</strong>
+          Subtotal {invoice.subtotal} — Discount {invoice.discount} — Tax {invoice.tax}
         </p>
       </section>
 
       {!settled && hasPermission("billing.payment.create") && (
         <section className="consult-section">
           <h2>Record payment</h2>
+          <div className="payment-rail-grid">
+            {PAYMENT_RAILS.map((rail) => (
+              <button
+                key={rail.method}
+                type="button"
+                className={method === rail.method ? "payment-rail-tile selected" : "payment-rail-tile"}
+                onClick={() => setMethod(rail.method)}
+              >
+                <span className={`payment-icon ${rail.className}`}>{rail.icon}</span>
+                {rail.label}
+              </button>
+            ))}
+          </div>
           <div className="vitals-form">
-            <select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-              <option value="cash">Cash</option>
-              <option value="card">Card</option>
-              <option value="bank">Bank</option>
-              <option value="insurance">Insurance</option>
-            </select>
             <input placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
             <button
               type="button"
               disabled={!amount || recordPayment.isPending}
               onClick={() => recordPayment.mutate({ method, amount }, { onSuccess: () => setAmount("") })}
             >
-              Record payment
+              Record {PAYMENT_RAILS.find((r) => r.method === method)?.label.toLowerCase()} payment
             </button>
           </div>
           {recordPayment.isError && <p className="form-error">{apiErrorMessage(recordPayment.error)}</p>}
 
-          <h2 style={{ marginTop: "1.5rem" }}>Or pay via M-Pesa</h2>
+          <h2 style={{ marginTop: "1.5rem" }}>
+            <span className="payment-icon mpesa" style={{ marginRight: "0.5rem" }}>
+              📱
+            </span>
+            Or pay via M-Pesa
+          </h2>
           <div className="vitals-form">
             <input placeholder="Phone (2547XXXXXXXX)" value={phone} onChange={(e) => setPhone(e.target.value)} />
             <input placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -129,15 +164,38 @@ export function InvoiceDetailPage() {
 
       <section className="consult-section">
         <h2>Payments</h2>
-        <ul className="diagnosis-list">
-          {payments?.map((p) => (
-            <li key={p.id}>
-              {p.method} {p.amount} — <span className="muted">{p.status}</span>
-            </li>
-          ))}
-          {payments?.length === 0 && <li className="muted">No payments yet.</li>}
-        </ul>
+        <div className="card-list">
+          {payments?.map((p) => {
+            const rail = paymentIconFor(p.method);
+            return (
+              <div key={p.id} className="modern-card">
+                <span className={`payment-icon ${rail.className}`}>{rail.icon}</span>
+                <div className="card-body">
+                  <div className="card-row">
+                    <p className="card-title">{rail.label}</p>
+                    <p className="card-title">{p.amount}</p>
+                  </div>
+                  <div className="card-row">
+                    <p className="card-meta">{new Date(p.received_at).toLocaleString()}</p>
+                    <span className={pillClass(p.status)}>{formatStatusLabel(p.status)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {payments?.length === 0 && <p className="card-subtitle">No payments yet.</p>}
+        </div>
       </section>
+
+      {settled && confirmedPayments.length > 0 ? (
+        <ReceiptPanel
+          invoiceNumber={invoice.invoice_number}
+          patientName={patientName ?? ""}
+          lineItems={invoice.line_items}
+          payments={confirmedPayments}
+          total={invoice.total}
+        />
+      ) : null}
 
       {hasPermission("billing.refund.create") && confirmedPayments.length > 0 && (
         <section className="consult-section">
@@ -167,15 +225,73 @@ export function InvoiceDetailPage() {
             </button>
           </div>
           {approveRefund.isError && <p className="form-error">{apiErrorMessage(approveRefund.error)}</p>}
-          <ul className="diagnosis-list" style={{ marginTop: "0.75rem" }}>
+          <div className="card-list" style={{ marginTop: "0.75rem" }}>
             {refunds?.map((r) => (
-              <li key={r.id}>
-                {r.amount} — {r.reason}
-              </li>
+              <div key={r.id} className="modern-card">
+                <div className="card-body">
+                  <div className="card-row">
+                    <p className="card-title">{r.amount}</p>
+                    <p className="card-meta">{new Date(r.approved_at).toLocaleString()}</p>
+                  </div>
+                  <p className="card-meta">{r.reason}</p>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
       )}
     </div>
+  );
+}
+
+function ReceiptPanel({
+  invoiceNumber,
+  patientName,
+  lineItems,
+  payments,
+  total,
+}: {
+  invoiceNumber: string;
+  patientName: string;
+  lineItems: { id: string; description: string; quantity: number; amount: string }[];
+  payments: { id: string; method: string; amount: string; received_at: string }[];
+  total: string;
+}) {
+  return (
+    <section className="consult-section receipt-section">
+      <div className="page-header">
+        <h2>Receipt</h2>
+        <button type="button" className="button-primary" onClick={() => window.print()}>
+          Print receipt
+        </button>
+      </div>
+      <div className="receipt-paper" id="receipt-printable">
+        <p className="receipt-brand">FDO Hospital</p>
+        <p className="receipt-meta">Invoice {invoiceNumber}</p>
+        <p className="receipt-meta">{patientName}</p>
+        <p className="receipt-meta">{new Date().toLocaleString()}</p>
+        <hr />
+        {lineItems.map((li) => (
+          <div key={li.id} className="receipt-row">
+            <span>
+              {li.description} × {li.quantity}
+            </span>
+            <span>{li.amount}</span>
+          </div>
+        ))}
+        <hr />
+        {payments.map((p) => (
+          <div key={p.id} className="receipt-row muted">
+            <span>Paid via {formatStatusLabel(p.method)}</span>
+            <span>{p.amount}</span>
+          </div>
+        ))}
+        <hr />
+        <div className="receipt-row receipt-total">
+          <span>Total paid</span>
+          <span>{total}</span>
+        </div>
+      </div>
+    </section>
   );
 }

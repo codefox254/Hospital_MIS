@@ -29,3 +29,26 @@ export function useStaffUsers() {
 export function staffName(user: StaffUser): string {
   return `${user.first_name} ${user.last_name}`.trim() || user.email;
 }
+
+interface PatientLite {
+  id: string;
+  mrn: string;
+  first_name: string;
+  last_name: string;
+}
+
+/** One GET per patient id, cached by react-query — cards across
+ * Appointments/Lab/Billing all reference a patient by id only (the
+ * serializers return raw FKs, not nested names), so this is the shared
+ * per-row resolver rather than each page re-implementing its own fetch. */
+export function usePatientName(id: string | undefined) {
+  return useQuery({
+    queryKey: ["lookups", "patient", id],
+    enabled: !!id,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data } = await api.get<PatientLite>(`/patients/patients/${id}/`);
+      return `${data.first_name} ${data.last_name}`.trim() || data.mrn;
+    },
+  });
+}
