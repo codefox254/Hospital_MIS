@@ -11,5 +11,6 @@ PRIVILEGED_ROLE_NAMES = frozenset(
         "IT Administrator",
         "Medical Director",
         "Insurance Officer",
+        "Super Admin",
     }
 )

@@ -7,6 +7,7 @@ is not something the frontend can be trusted to gate.
 
 from datetime import timedelta
 
+from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
@@ -14,7 +15,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.accounts import mfa
 from apps.accounts.constants import PRIVILEGED_ROLE_NAMES
-from apps.accounts.models import User
+from apps.accounts.models import Role, User
+from apps.core.models import Facility
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -23,13 +25,40 @@ class UserSerializer(serializers.ModelSerializer):
     select on scheduling/booking forms), not a user-management screen.
     No email/phone beyond what's already visible facility-wide, no role/
     permission data (that's `/auth/me/`'s job for the requester's own
-    account, and admin-only for anyone else's — not built yet).
+    account; CreateUserSerializer below is the admin-onboarding path).
     """
 
     class Meta:
         model = User
         fields = ["id", "email", "first_name", "last_name"]
         read_only_fields = fields
+
+
+class CreateUserSerializer(serializers.ModelSerializer):
+    """
+    The admin-onboarding write path: Super Admin creating a new facility's
+    first admin, or a Facility Admin adding their own staff. `facility` is
+    optional here on purpose — UserViewSet.create() decides whether the
+    requester is even allowed to set it (Super Admin only; everyone else
+    gets forced onto their own facility), which is an authorization
+    decision, not something this serializer should silently trust from
+    the payload.
+    """
+
+    password = serializers.CharField(write_only=True, min_length=12)
+    facility = serializers.PrimaryKeyRelatedField(queryset=Facility.objects.all(), required=False)
+    role = serializers.SlugRelatedField(
+        slug_field="name", queryset=Role.objects.all(), required=False, allow_null=True
+    )
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "password", "first_name", "last_name", "phone", "facility", "role"]
+        read_only_fields = ["id"]
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
 
 
 REFRESH_LIFETIME_BY_CLIENT = {

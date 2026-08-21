@@ -17,7 +17,7 @@ check.
 
 from rest_framework import serializers
 
-from apps.core.models import Department
+from apps.core.models import Department, Facility
 
 
 class DepartmentSerializer(serializers.ModelSerializer):
@@ -25,6 +25,19 @@ class DepartmentSerializer(serializers.ModelSerializer):
         model = Department
         fields = ["id", "facility", "name", "code", "parent_department"]
         read_only_fields = fields
+
+
+class FacilitySerializer(serializers.ModelSerializer):
+    """Facility is the tenant record itself (BRD's SaaS model maps
+    hospital -> Facility 1:1) — deliberately the one resource in this
+    codebase whose ViewSet queryset is NOT facility-scoped, since scoping
+    the tenant list *by* tenant is meaningless. Only Super Admin holds
+    core.facility.* permissions (seed_rbac)."""
+
+    class Meta:
+        model = Facility
+        fields = ["id", "name", "code", "type", "address", "phone", "is_active", "created_at"]
+        read_only_fields = ["id", "created_at"]
 
 
 class FacilityScopedPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):

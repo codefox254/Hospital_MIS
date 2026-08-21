@@ -33,6 +33,11 @@ from apps.accounts.models import Permission, Role, RolePermission
 # referenced anywhere in apps/*/views.py.
 PERMISSION_CATALOGUE = {
     "accounts.user.view": "View staff user directory",
+    "accounts.user.create": "Create a staff user account",
+    "core.facility.view": "View facility (tenant) records",
+    "core.facility.create": "Create a facility (onboard a new hospital)",
+    "core.facility.update": "Update a facility's details",
+    "core.facility.deactivate": "Deactivate a facility",
     "appointments.appointment.cancel": "Cancel an appointment",
     "appointments.appointment.check_in": "Check in a patient for their appointment",
     "appointments.appointment.create": "Book an appointment",
@@ -235,6 +240,32 @@ ROLE_CATALOGUE = {
         "patients.patient.view",
         "billing.invoice.view",
     ],
+    # --- SaaS tenancy tier (Facility = tenant record; see core/serializers.py).
+    # Super Admin is platform-wide (unscoped UserRole grant, enforced in
+    # create_user_with_role) and deliberately holds none of the
+    # facility-scoped clinical/billing/etc. codes below — it manages
+    # tenants (Facility rows) and onboards each tenant's first admin, not
+    # their patients' records. Administrator is the per-tenant ("Facility
+    # Admin") role and is the opposite: everything *except* core.facility.*,
+    # which only Super Admin may hold.
+    "Super Admin": [
+        "core.facility.view",
+        "core.facility.create",
+        "core.facility.update",
+        "core.facility.deactivate",
+        "accounts.user.view",
+        "accounts.user.create",
+    ],
+}
+
+# Facility Admin (role name kept as "Administrator" — established elsewhere
+# in this codebase, e.g. tests/UAT fixtures) gets every operational
+# permission except the platform-tenancy ones, which are Super Admin-only.
+_FACILITY_ADMIN_EXCLUDED_CODES = {
+    "core.facility.view",
+    "core.facility.create",
+    "core.facility.update",
+    "core.facility.deactivate",
 }
 
 
@@ -256,7 +287,9 @@ class Command(BaseCommand):
         self.stdout.write(f"Permissions: {len(permissions)} total, {created_perms} created")
 
         role_catalogue = dict(ROLE_CATALOGUE)
-        role_catalogue["Administrator"] = list(PERMISSION_CATALOGUE)
+        role_catalogue["Administrator"] = [
+            code for code in PERMISSION_CATALOGUE if code not in _FACILITY_ADMIN_EXCLUDED_CODES
+        ]
 
         created_roles = 0
         for role_name, codes in role_catalogue.items():

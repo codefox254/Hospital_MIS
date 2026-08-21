@@ -11,7 +11,7 @@ unset (facility-wide) or matches the requested department. `facility`
 defaults to the user's home facility when not given explicitly.
 """
 
-from apps.accounts.models import BreakGlassGrant, UserRole
+from apps.accounts.models import BreakGlassGrant, User, UserRole
 
 
 def get_effective_permission_codes(user, *, facility=None, department=None):
@@ -48,3 +48,35 @@ def get_effective_permission_codes(user, *, facility=None, department=None):
 
 def user_has_permission(user, code, *, facility=None, department=None):
     return code in get_effective_permission_codes(user, facility=facility, department=department)
+
+
+def create_user_with_role(
+    *, email, password, first_name, last_name, facility, role=None, phone="", actor=None
+):
+    """Creates a staff user and, if a role is given, grants it immediately
+    — used by the admin-onboarding flow (Super Admin creating a facility's
+    first admin, or a Facility Admin adding their own staff) so a new
+    account isn't left holding zero permissions until someone remembers a
+    second step.
+
+    A grant of the "Super Admin" role is always unscoped (facility=None)
+    regardless of the new user's home facility, matching the SaaS model:
+    Super Admin authority is platform-wide by definition, not tied to any
+    one tenant. Every other role's grant is scoped to `facility`.
+    """
+    user = User.objects.create_user(
+        email=email,
+        password=password,
+        first_name=first_name,
+        last_name=last_name,
+        phone=phone or None,
+        facility=facility,
+    )
+    if role is not None:
+        UserRole.objects.create(
+            user=user,
+            role=role,
+            facility=None if role.name == "Super Admin" else facility,
+            department=None,
+        )
+    return user

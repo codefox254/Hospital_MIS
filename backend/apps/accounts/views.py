@@ -9,7 +9,7 @@ privileged, not-yet-MFA-enabled account (see serializers.py).
 from django.contrib.auth import authenticate
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
-from rest_framework import serializers, status, viewsets
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -20,8 +20,12 @@ from rest_framework_simplejwt.views import TokenRefreshView as BaseTokenRefreshV
 from apps.accounts import mfa
 from apps.accounts.models import User
 from apps.accounts.permissions import HasModulePermission
-from apps.accounts.serializers import ClientAwareTokenObtainPairSerializer, UserSerializer
-from apps.accounts.services import get_effective_permission_codes
+from apps.accounts.serializers import (
+    ClientAwareTokenObtainPairSerializer,
+    CreateUserSerializer,
+    UserSerializer,
+)
+from apps.accounts.services import create_user_with_role, get_effective_permission_codes
 
 
 class TokenObtainPairView(BaseTokenObtainPairView):
@@ -146,19 +150,65 @@ class MeView(APIView):
         )
 
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    """Backs staff pickers (the doctor select on scheduling/booking
-    forms) — see UserSerializer's docstring for what this deliberately
-    doesn't expose."""
+class UserViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet,
+):
+    """`list`/`retrieve` back staff pickers (the doctor select on
+    scheduling/booking forms) — see UserSerializer's docstring for what
+    that deliberately doesn't expose. `create` is the admin-onboarding
+    path: a Facility Admin adding their own staff, or a Super Admin
+    creating a new facility's first admin account — see
+    CreateUserSerializer and create() below for the facility-scoping
+    enforcement that split makes necessary."""
 
-    serializer_class = UserSerializer
     permission_classes = [HasModulePermission]
-    permission_code = "accounts.user.view"
+    permission_codes_by_action = {
+        "list": "accounts.user.view",
+        "retrieve": "accounts.user.view",
+        "create": "accounts.user.create",
+    }
     filter_backends = [DjangoFilterBackend]
     filterset_fields = []
     queryset = User.objects.none()
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return CreateUserSerializer
+        return UserSerializer
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return User.objects.none()
         return User.objects.filter(facility=self.request.user.facility, is_active=True)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        requester = request.user
+        is_platform_admin = "core.facility.create" in get_effective_permission_codes(requester)
+        if is_platform_admin:
+            target_facility = serializer.validated_data.get("facility")
+            if target_facility is None:
+                raise serializers.ValidationError(
+                    {"facility": "Required when creating a user as a platform admin."}
+                )
+        else:
+            # Never trust a non-platform-admin's payload for this — force
+            # their own facility regardless of what was submitted.
+            target_facility = requester.facility
+
+        user = create_user_with_role(
+            email=serializer.validated_data["email"],
+            password=serializer.validated_data["password"],
+            first_name=serializer.validated_data.get("first_name", ""),
+            last_name=serializer.validated_data.get("last_name", ""),
+            phone=serializer.validated_data.get("phone", ""),
+            facility=target_facility,
+            role=serializer.validated_data.get("role"),
+            actor=requester,
+        )
+        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
