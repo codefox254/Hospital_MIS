@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 
 import { apiErrorMessage } from "../../lib/api";
 import { useAuthStore } from "../../lib/auth-store";
+import { usePatientName } from "../../lib/useLookups";
+import { formatStatusLabel, pillClass } from "../../lib/statusPill";
 import { useAllergyCheck, useDispense, useDrugs, usePrescription, useStockBatches } from "./hooks";
 import type { PrescriptionItem } from "../../types/pharmacy";
 
@@ -11,14 +13,22 @@ export function PrescriptionDetailPage() {
   const { data: prescription } = usePrescription(id);
   const { data: drugs } = useDrugs();
   const { data: batches } = useStockBatches();
+  const { data: patientName } = usePatientName(prescription?.patient);
 
   if (!prescription) return <p>Loading…</p>;
 
   return (
     <div className="consultation-workspace">
-      <div className="page-header">
-        <h1>Prescription</h1>
-        <span className={`status-pill status-${prescription.status}`}>{prescription.status}</span>
+      <div className="invoice-header-card">
+        <div className="card-row">
+          <div>
+            <p className="invoice-number">Prescription</p>
+            <p className="invoice-patient">{patientName ?? "…"}</p>
+          </div>
+          <span className={pillClass(prescription.status)}>
+            {formatStatusLabel(prescription.status)}
+          </span>
+        </div>
       </div>
 
       {prescription.items.map((item) => (
@@ -60,13 +70,19 @@ function DispenseCard({
 
   return (
     <section className="consult-section">
-      <h2>
-        {drugName} {isControlled && <span className="priority-priority">(controlled)</span>}
-      </h2>
-      <p className="muted">
-        {item.dosage}, {item.frequency}
-        {item.duration_days ? ` for ${item.duration_days} days` : ""} — qty {item.qty_prescribed}
-      </p>
+      <div className="modern-card" style={{ marginBottom: "0.75rem" }}>
+        <div className="icon-badge">💊</div>
+        <div className="card-body">
+          <div className="card-row">
+            <p className="card-title">{drugName}</p>
+            {isControlled && <span className="pill pill-danger">Controlled</span>}
+          </div>
+          <p className="card-meta">
+            {item.dosage}, {item.frequency}
+            {item.duration_days ? ` for ${item.duration_days} days` : ""} · qty {item.qty_prescribed}
+          </p>
+        </div>
+      </div>
 
       {conflicts && conflicts.length > 0 && (
         <p className="form-error">

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 
 import { apiErrorMessage } from "../../lib/api";
 import { useAuthStore } from "../../lib/auth-store";
+import { formatStatusLabel, pillClass } from "../../lib/statusPill";
 import {
   useCollectSample,
   useEnterResult,
@@ -23,9 +24,17 @@ export function LabOrderDetailPage() {
 
   return (
     <div className="consultation-workspace">
-      <div className="page-header">
-        <h1>Lab order</h1>
-        <span className={`status-pill status-${order.status}`}>{order.status}</span>
+      <div className="invoice-header-card">
+        <div className="card-row">
+          <div>
+            <p className="invoice-number">Lab order</p>
+            <p className="invoice-patient">
+              {order.priority !== "routine" ? formatStatusLabel(order.priority) + " · " : ""}
+              {new Date(order.ordered_at).toLocaleString()}
+            </p>
+          </div>
+          <span className={pillClass(order.status)}>{formatStatusLabel(order.status)}</span>
+        </div>
       </div>
 
       {order.items.map((item) => (
@@ -70,9 +79,19 @@ function LabItemCard({
 
   return (
     <section className="consult-section">
-      <h2>
-        {item.test_code} — {item.test_name}
-      </h2>
+      <div className="modern-card" style={{ marginBottom: sample || result ? "0.75rem" : 0 }}>
+        <div className="icon-badge">🧪</div>
+        <div className="card-body">
+          <div className="card-row">
+            <p className="card-title">{item.test_name}</p>
+            {sample && <span className={pillClass(sample.status)}>{formatStatusLabel(sample.status)}</span>}
+          </div>
+          <p className="card-meta">
+            {item.test_code}
+            {sample ? ` · Sample ${sample.barcode}` : ""}
+          </p>
+        </div>
+      </div>
 
       {!sample && hasPermission("laboratory.lab_sample.create") && (
         <div className="vitals-form">
@@ -85,11 +104,6 @@ function LabItemCard({
             Collect sample
           </button>
         </div>
-      )}
-      {sample && (
-        <p className="muted">
-          Sample {sample.barcode} — {sample.status}
-        </p>
       )}
       {collect.isError && <p className="form-error">{apiErrorMessage(collect.error)}</p>}
 
@@ -116,25 +130,43 @@ function LabItemCard({
       {enterResult.isError && <p className="form-error">{apiErrorMessage(enterResult.error)}</p>}
 
       {result && (
-        <div>
-          <ul className="diagnosis-list">
-            {result.values.map((v, i) => (
-              <li key={i}>
-                {v.parameter}: {v.value} {v.unit}{" "}
-                {v.flag !== "normal" && <span className={`priority-${v.flag === "critical" ? "emergency" : "priority"}`}>({v.flag})</span>}
-              </li>
-            ))}
-          </ul>
-          <p className="muted">
-            Status: {result.status}
-            {result.is_critical && " — CRITICAL"}
-          </p>
-          {result.status === "entered" && hasPermission("laboratory.lab_result.verify") && (
-            <button type="button" onClick={() => verify.mutate(result.id)} disabled={verify.isPending}>
-              {verify.isPending ? "Verifying…" : "Verify result"}
-            </button>
-          )}
-          {verify.isError && <p className="form-error">{apiErrorMessage(verify.error)}</p>}
+        <div className="modern-card" style={{ marginTop: "0.75rem" }}>
+          <div className="card-body">
+            <div className="card-row">
+              <p className="card-title">Result</p>
+              <div style={{ display: "flex", gap: "0.4rem" }}>
+                {result.is_critical && <span className="pill pill-danger">Critical</span>}
+                <span className={pillClass(result.status)}>{formatStatusLabel(result.status)}</span>
+              </div>
+            </div>
+            <div style={{ marginTop: "0.6rem" }}>
+              {result.values.map((v, i) => (
+                <div key={i} className="receipt-row">
+                  <span>{v.parameter}</span>
+                  <span>
+                    {v.value} {v.unit}{" "}
+                    {v.flag !== "normal" && (
+                      <span className={v.flag === "critical" ? "pill pill-danger" : "pill pill-warning"}>
+                        {v.flag}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {result.status === "entered" && hasPermission("laboratory.lab_result.verify") && (
+              <button
+                type="button"
+                className="button-primary"
+                style={{ marginTop: "0.75rem" }}
+                onClick={() => verify.mutate(result.id)}
+                disabled={verify.isPending}
+              >
+                {verify.isPending ? "Verifying…" : "Verify result"}
+              </button>
+            )}
+            {verify.isError && <p className="form-error">{apiErrorMessage(verify.error)}</p>}
+          </div>
         </div>
       )}
     </section>

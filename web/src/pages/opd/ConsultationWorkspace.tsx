@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 
 import { apiErrorMessage } from "../../lib/api";
 import { useAuthStore } from "../../lib/auth-store";
+import { usePatientName } from "../../lib/useLookups";
+import { formatStatusLabel, pillClass } from "../../lib/statusPill";
 import {
   useAddAddendum,
   useAddDiagnosis,
@@ -35,6 +37,7 @@ export function ConsultationWorkspace() {
   const { data: visit } = useVisit(visitId);
   const { data: consultation } = useConsultationForVisit(visitId);
   const { data: vitalsList } = useVitalsForVisit(visitId);
+  const { data: patientName } = usePatientName(visit?.patient);
 
   if (!visit || !consultation) {
     return <p>Loading…</p>;
@@ -44,10 +47,15 @@ export function ConsultationWorkspace() {
 
   return (
     <div className="consultation-workspace">
-      <div className="page-header">
-        <h1>Consultation</h1>
-        <div>
-          <span className={`status-pill status-${visit.status}`}>{visit.status}</span>
+      <div className="invoice-header-card">
+        <div className="card-row">
+          <div>
+            <p className="invoice-number">Consultation</p>
+            <p className="invoice-patient">{patientName ?? "…"}</p>
+          </div>
+          <span className={pillClass(visit.status)}>{formatStatusLabel(visit.status)}</span>
+        </div>
+        <div className="invoice-totals-row" style={{ marginTop: "1rem" }}>
           {hasPermission("laboratory.lab_order.create") && (
             <Link to={`/laboratory/new?visit=${visit.id}`} className="button-primary inline-link">
               Order labs
