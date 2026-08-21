@@ -4,6 +4,39 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added (web console — full modernization pass, patient registration)
+- Card-based UI (`.modern-card`/`.pill-*`/`.icon-badge`) extended to
+  every remaining detail view — ConsultationWorkspace, Lab Order
+  detail, Prescription detail — matching the list pages and the admin
+  dashboard/cashier redesign from the same pass. Every card resolves
+  patient/doctor/department names via id-keyed lookups instead of
+  showing raw UUIDs.
+- Patient registration: a duplicate-check panel searches existing
+  patients by name/phone as reception fills in the form (same backend
+  search_fields the patient list's search box already used), showing
+  matches as cards linking to the existing record before a second one
+  gets created. Found and displayed a real accidental duplicate from
+  earlier session testing live.
+
+### Fixed (backend — queue ordering)
+- `QueueEntry.Meta.ordering` was `["-priority", "queue_number"]` — a
+  plain descending sort on the priority CharField's *string* value.
+  Since "priority" > "normal" > "emergency" alphabetically, that put
+  EMERGENCY patients last in every queue view and the WebSocket-driven
+  live queue panel — a clinical-safety bug. Fixed with an explicit
+  Case/When rank (emergency=0/priority=1/normal=2) instead of leaning
+  on string sort order ever meaning something clinically. State-only
+  migration, 2 new regression tests (one directly reproducing the old
+  ordering to prove the fix).
+
+Full regression across all three apps before closing this batch:
+backend 467 tests passed (black/isort/flake8 clean, no pending
+migrations), web tsc/oxlint/`npm run build` clean, mobile tsc clean
+(0 eslint errors) and live-verified on the Android emulator after a
+stale AVD lock (from an unclean shutdown) was cleared — drawer
+navigation, real data rendering, zero crashes across the whole
+verification pass.
+
 ### Added (web console — Admin dashboard, SaaS admin tiers)
 - `/admin` route + sidebar entry: role-aware, branching on whether the
   signed-in user holds `core.facility.view` (Super Admin) — same
