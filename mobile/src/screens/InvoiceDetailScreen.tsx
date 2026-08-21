@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { PlaceholderBanner } from "../components/PlaceholderBanner";
 import { api, apiErrorMessage } from "../lib/api";
 import { formatLabel, statusStyle } from "../lib/statusStyle";
 import type { Invoice, Payment } from "../types/billing";
@@ -31,7 +30,6 @@ export function InvoiceDetailScreen({ route }: Props) {
   if (error) {
     return (
       <View style={styles.screen}>
-        <PlaceholderBanner />
         <Text style={styles.error}>{error}</Text>
       </View>
     );
@@ -40,7 +38,6 @@ export function InvoiceDetailScreen({ route }: Props) {
   if (!invoice) {
     return (
       <View style={styles.screen}>
-        <PlaceholderBanner />
         <Text style={styles.loading}>Loading...</Text>
       </View>
     );
@@ -50,7 +47,6 @@ export function InvoiceDetailScreen({ route }: Props) {
 
   return (
     <View style={styles.screen}>
-      <PlaceholderBanner />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.headerCard}>
           <View style={styles.rowBetween}>

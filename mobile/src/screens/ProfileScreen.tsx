@@ -1,6 +1,5 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { PlaceholderBanner } from "../components/PlaceholderBanner";
 import { useAuthStore } from "../lib/auth-store";
 import { useCurrentUser } from "../lib/useCurrentUser";
 
@@ -14,7 +13,6 @@ export function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-      <PlaceholderBanner />
       <ScrollView contentContainerStyle={styles.content}>
         {loading || !user ? (
           <Text>Loading...</Text>

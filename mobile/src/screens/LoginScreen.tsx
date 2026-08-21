@@ -7,7 +7,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
 } from "react-native";
 
 import { api, apiErrorMessage } from "../lib/api";

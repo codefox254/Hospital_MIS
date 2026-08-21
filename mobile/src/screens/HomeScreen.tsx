@@ -1,6 +1,5 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { PlaceholderBanner } from "../components/PlaceholderBanner";
 import { useCurrentUser } from "../lib/useCurrentUser";
 
 export function HomeScreen() {
@@ -8,7 +7,6 @@ export function HomeScreen() {
 
   return (
     <View style={styles.screen}>
-      <PlaceholderBanner />
       <ScrollView contentContainerStyle={styles.content}>
         {loading ? (
           <Text>Loading...</Text>

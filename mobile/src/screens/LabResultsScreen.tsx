@@ -3,7 +3,6 @@ import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } fr
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 
-import { PlaceholderBanner } from "../components/PlaceholderBanner";
 import { api, apiErrorMessage } from "../lib/api";
 import { formatLabel, priorityStyle, statusStyle } from "../lib/statusStyle";
 import type { LabOrder, PaginatedResponse } from "../types/appointment";
@@ -33,7 +32,6 @@ export function LabResultsScreen() {
 
   return (
     <View style={styles.screen}>
-      <PlaceholderBanner />
       <FlatList
         contentContainerStyle={styles.content}
         data={orders}

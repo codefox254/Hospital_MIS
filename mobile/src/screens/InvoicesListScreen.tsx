@@ -3,7 +3,6 @@ import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } fr
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 
-import { PlaceholderBanner } from "../components/PlaceholderBanner";
 import { api, apiErrorMessage } from "../lib/api";
 import { formatLabel, statusStyle } from "../lib/statusStyle";
 import type { Invoice } from "../types/billing";
@@ -34,7 +33,6 @@ export function InvoicesListScreen() {
 
   return (
     <View style={styles.screen}>
-      <PlaceholderBanner />
       <FlatList
         contentContainerStyle={styles.content}
         data={invoices}

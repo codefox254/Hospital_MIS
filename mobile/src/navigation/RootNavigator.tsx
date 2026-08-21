@@ -1,9 +1,12 @@
-import { NavigationContainer } from "@react-navigation/native";
+import { useState } from "react";
+import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Text } from "react-native";
+import { Text, TouchableOpacity } from "react-native";
 
 import { useAuthStore } from "../lib/auth-store";
+import { useCurrentUser } from "../lib/useCurrentUser";
+import { SideDrawer } from "../components/SideDrawer";
 import { LoginScreen } from "../screens/LoginScreen";
 import { HomeScreen } from "../screens/HomeScreen";
 import { AppointmentsScreen } from "../screens/AppointmentsScreen";
@@ -30,13 +33,21 @@ const stackHeaderOptions = {
   headerTitleStyle: { fontWeight: "700" as const },
 };
 
-function AppointmentsStackNavigator() {
+function HamburgerButton({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} hitSlop={12} style={{ paddingHorizontal: 12 }}>
+      <Text style={{ fontSize: 22, color: "#fff" }}>{"☰"}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function AppointmentsStackNavigator({ onOpenDrawer }: { onOpenDrawer: () => void }) {
   return (
     <AppointmentsStack.Navigator screenOptions={stackHeaderOptions}>
       <AppointmentsStack.Screen
         name="AppointmentsList"
         component={AppointmentsScreen}
-        options={{ title: "Appointments" }}
+        options={{ title: "Appointments", headerLeft: () => <HamburgerButton onPress={onOpenDrawer} /> }}
       />
       <AppointmentsStack.Screen
         name="AppointmentDetail"
@@ -47,13 +58,13 @@ function AppointmentsStackNavigator() {
   );
 }
 
-function LabResultsStackNavigator() {
+function LabResultsStackNavigator({ onOpenDrawer }: { onOpenDrawer: () => void }) {
   return (
     <LabResultsStack.Navigator screenOptions={stackHeaderOptions}>
       <LabResultsStack.Screen
         name="LabResultsList"
         component={LabResultsScreen}
-        options={{ title: "Lab Results" }}
+        options={{ title: "Lab Results", headerLeft: () => <HamburgerButton onPress={onOpenDrawer} /> }}
       />
       <LabResultsStack.Screen
         name="LabOrderDetail"
@@ -64,13 +75,13 @@ function LabResultsStackNavigator() {
   );
 }
 
-function BillingStackNavigator() {
+function BillingStackNavigator({ onOpenDrawer }: { onOpenDrawer: () => void }) {
   return (
     <BillingStack.Navigator screenOptions={stackHeaderOptions}>
       <BillingStack.Screen
         name="InvoicesList"
         component={InvoicesListScreen}
-        options={{ title: "Billing" }}
+        options={{ title: "Billing", headerLeft: () => <HamburgerButton onPress={onOpenDrawer} /> }}
       />
       <BillingStack.Screen
         name="InvoiceDetail"
@@ -95,13 +106,14 @@ function TabIcon({ route, focused }: { route: string; focused: boolean }) {
   );
 }
 
-function MainTabs() {
+function MainTabs({ onOpenDrawer }: { onOpenDrawer: () => void }) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerStyle: { backgroundColor: "#0f2c52" },
         headerTintColor: "#fff",
         headerTitleStyle: { fontWeight: "700" },
+        headerLeft: () => <HamburgerButton onPress={onOpenDrawer} />,
         tabBarActiveTintColor: "#0f2c52",
         tabBarInactiveTintColor: "#9ca3af",
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
@@ -110,21 +122,15 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen
-        name="Appointments"
-        component={AppointmentsStackNavigator}
-        options={{ headerShown: false }}
-      />
-      <Tab.Screen
-        name="Lab Results"
-        component={LabResultsStackNavigator}
-        options={{ headerShown: false }}
-      />
-      <Tab.Screen
-        name="Billing"
-        component={BillingStackNavigator}
-        options={{ headerShown: false }}
-      />
+      <Tab.Screen name="Appointments" options={{ headerShown: false }}>
+        {() => <AppointmentsStackNavigator onOpenDrawer={onOpenDrawer} />}
+      </Tab.Screen>
+      <Tab.Screen name="Lab Results" options={{ headerShown: false }}>
+        {() => <LabResultsStackNavigator onOpenDrawer={onOpenDrawer} />}
+      </Tab.Screen>
+      <Tab.Screen name="Billing" options={{ headerShown: false }}>
+        {() => <BillingStackNavigator onOpenDrawer={onOpenDrawer} />}
+      </Tab.Screen>
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -132,8 +138,42 @@ function MainTabs() {
 
 export function RootNavigator() {
   const access = useAuthStore((s) => s.access);
+  const logout = useAuthStore((s) => s.logout);
+  const { user } = useCurrentUser();
+  const navigationRef = useNavigationContainerRef();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("Home");
 
   return (
-    <NavigationContainer>{access ? <MainTabs /> : <LoginScreen />}</NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onStateChange={(state) => {
+        if (!state) return;
+        const topRoute = state.routes[state.index];
+        setActiveTab(topRoute.name);
+      }}
+    >
+      {access ? (
+        <>
+          <MainTabs onOpenDrawer={() => setDrawerOpen(true)} />
+          <SideDrawer
+            visible={drawerOpen}
+            activeRoute={activeTab}
+            user={user}
+            onClose={() => setDrawerOpen(false)}
+            onNavigate={(route) => {
+              navigationRef.navigate(route as never);
+              setDrawerOpen(false);
+            }}
+            onSignOut={() => {
+              setDrawerOpen(false);
+              logout();
+            }}
+          />
+        </>
+      ) : (
+        <LoginScreen />
+      )}
+    </NavigationContainer>
   );
 }
