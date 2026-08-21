@@ -7,7 +7,7 @@ from apps.appointments.factories import (
     DoctorScheduleFactory,
     QueueEntryFactory,
 )
-from apps.appointments.models import Appointment
+from apps.appointments.models import Appointment, QueueEntry
 
 pytestmark = pytest.mark.django_db
 
@@ -87,6 +87,29 @@ class TestQueueEntry:
     def test_called_at_defaults_null(self):
         entry = QueueEntryFactory()
         assert entry.called_at is None
+
+    def test_emergency_patients_sort_first_not_last(self):
+        """Regression: Meta.ordering used to be `["-priority", ...]`, a
+        plain descending sort on the CharField's string value. Since
+        "priority" > "normal" > "emergency" alphabetically, that put
+        EMERGENCY patients *last* in the queue — a clinical-safety bug,
+        not just a display quirk. Explicit Case/When ranking fixes it;
+        this proves emergency comes first regardless of arrival order."""
+        normal = QueueEntryFactory(priority=QueueEntry.Priority.NORMAL, queue_number=1)
+        priority = QueueEntryFactory(priority=QueueEntry.Priority.PRIORITY, queue_number=2)
+        emergency = QueueEntryFactory(priority=QueueEntry.Priority.EMERGENCY, queue_number=3)
+
+        ordered = list(QueueEntry.objects.filter(id__in=[normal.id, priority.id, emergency.id]))
+
+        assert ordered == [emergency, priority, normal]
+
+    def test_same_priority_breaks_tie_by_queue_number(self):
+        second = QueueEntryFactory(priority=QueueEntry.Priority.NORMAL, queue_number=2)
+        first = QueueEntryFactory(priority=QueueEntry.Priority.NORMAL, queue_number=1)
+
+        ordered = list(QueueEntry.objects.filter(id__in=[first.id, second.id]))
+
+        assert ordered == [first, second]
 
 
 class TestAppointmentReminder:

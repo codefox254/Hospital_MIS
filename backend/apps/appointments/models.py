@@ -132,7 +132,27 @@ class QueueEntry(UUIDModel):
     called_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        ordering = ["-priority", "queue_number"]
+        # NOT `["-priority", "queue_number"]` — that orders by the raw
+        # CharField value, which is alphabetical ("priority" > "normal" >
+        # "emergency" descending), putting EMERGENCY patients *last* in
+        # the queue. A real clinical-safety bug, caught by reasoning about
+        # the actual sort order rather than by symptom. Case/When ranks
+        # emergency=0/priority=1/normal=2 explicitly instead of leaning on
+        # string sort order ever meaning something clinically.
+        ordering = [
+            models.Case(
+                # Bare string literals, not Priority.EMERGENCY etc. — Meta
+                # is a nested class and can't see QueueEntry's class-body
+                # namespace (Python nested classes don't get an enclosing
+                # scope the way nested functions do), so `Priority` isn't
+                # resolvable here even though it's defined a few lines up.
+                models.When(priority="emergency", then=0),
+                models.When(priority="priority", then=1),
+                default=2,
+                output_field=models.IntegerField(),
+            ),
+            "queue_number",
+        ]
 
     def __str__(self):
         return f"#{self.queue_number} — {self.appointment}"
