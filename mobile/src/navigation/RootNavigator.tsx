@@ -1,8 +1,12 @@
-import { useState } from "react";
-import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
+import { useCallback, useState } from "react";
+import {
+  NavigationContainer,
+  useNavigationContainerRef,
+  type NavigationState,
+} from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Text, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, TouchableOpacity } from "react-native";
 
 import { useAuthStore } from "../lib/auth-store";
 import { useCurrentUser } from "../lib/useCurrentUser";
@@ -35,8 +39,8 @@ const stackHeaderOptions = {
 
 function HamburgerButton({ onPress }: { onPress: () => void }) {
   return (
-    <TouchableOpacity onPress={onPress} hitSlop={12} style={{ paddingHorizontal: 12 }}>
-      <Text style={{ fontSize: 22, color: "#fff" }}>{"☰"}</Text>
+    <TouchableOpacity onPress={onPress} hitSlop={12} style={navStyles.hamburgerButton}>
+      <Text style={navStyles.hamburgerIcon}>{"☰"}</Text>
     </TouchableOpacity>
   );
 }
@@ -102,9 +106,18 @@ const TAB_ICONS: Record<string, string> = {
 
 function TabIcon({ route, focused }: { route: string; focused: boolean }) {
   return (
-    <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.45 }}>{TAB_ICONS[route]}</Text>
+    <Text style={focused ? navStyles.tabIconFocused : navStyles.tabIconUnfocused}>
+      {TAB_ICONS[route]}
+    </Text>
   );
 }
+
+const navStyles = StyleSheet.create({
+  hamburgerButton: { paddingHorizontal: 12 },
+  hamburgerIcon: { fontSize: 22, color: "#fff" },
+  tabIconFocused: { fontSize: 22, opacity: 1 },
+  tabIconUnfocused: { fontSize: 22, opacity: 0.45 },
+});
 
 function MainTabs({ onOpenDrawer }: { onOpenDrawer: () => void }) {
   return (
@@ -144,31 +157,36 @@ export function RootNavigator() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Home");
 
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const handleNavigate = useCallback(
+    (route: string) => {
+      navigationRef.navigate(route as never);
+      setDrawerOpen(false);
+    },
+    [navigationRef],
+  );
+  const handleSignOut = useCallback(() => {
+    setDrawerOpen(false);
+    logout();
+  }, [logout]);
+  const handleStateChange = useCallback((state: NavigationState | undefined) => {
+    if (!state) return;
+    setActiveTab(state.routes[state.index].name);
+  }, []);
+
   return (
-    <NavigationContainer
-      ref={navigationRef}
-      onStateChange={(state) => {
-        if (!state) return;
-        const topRoute = state.routes[state.index];
-        setActiveTab(topRoute.name);
-      }}
-    >
+    <NavigationContainer ref={navigationRef} onStateChange={handleStateChange}>
       {access ? (
         <>
-          <MainTabs onOpenDrawer={() => setDrawerOpen(true)} />
+          <MainTabs onOpenDrawer={openDrawer} />
           <SideDrawer
             visible={drawerOpen}
             activeRoute={activeTab}
             user={user}
-            onClose={() => setDrawerOpen(false)}
-            onNavigate={(route) => {
-              navigationRef.navigate(route as never);
-              setDrawerOpen(false);
-            }}
-            onSignOut={() => {
-              setDrawerOpen(false);
-              logout();
-            }}
+            onClose={closeDrawer}
+            onNavigate={handleNavigate}
+            onSignOut={handleSignOut}
           />
         </>
       ) : (
